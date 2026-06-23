@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>truckfinder — full app flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --sans:'Noto Sans','Noto Sans Devanagari',system-ui,sans-serif;
+    --mono:'Noto Sans Mono',ui-monospace,monospace;
+    --bg:oklch(0.985 0.004 250);
+    --card:#ffffff;
+    --ink:oklch(0.26 0.014 255);
+    --muted:oklch(0.56 0.016 255);
+    --line:oklch(0.92 0.008 255);
+    --accent:oklch(0.55 0.15 252);
+    --accent-soft:oklch(0.96 0.035 252);
+    --accent-line:oklch(0.85 0.08 252);
+    --accent-shadow:oklch(0.55 0.15 252 / 0.5);
+    --ph:oklch(0.93 0.008 255);
+    --ph2:oklch(0.96 0.005 255);
+    --ok:oklch(0.55 0.11 158); --ok-bg:oklch(0.95 0.03 158);
+    --warn:oklch(0.64 0.13 70); --warn-bg:oklch(0.95 0.05 80);
+    --bad:oklch(0.58 0.15 25); --bad-bg:oklch(0.95 0.04 25);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(circle at 1px 1px, oklch(0.88 0.008 255) 1px, transparent 0) 0 0/26px 26px,
+      var(--bg);
+    font-family:var(--sans); color:var(--ink);
+    padding:46px 0 90px; -webkit-font-smoothing:antialiased;
+  }
+  .head{padding:0 40px;max-width:1100px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent)}
+  .eyebrow .dot{width:8px;height:8px;border-radius:999px;background:var(--accent)}
+  h1{font-size:32px;font-weight:800;letter-spacing:-0.6px;margin:10px 0 0}
+  h1 .hi{display:block;font-size:18px;font-weight:600;color:var(--muted);margin-top:6px}
+  .sub{color:var(--muted);font-size:14.5px;max-width:640px;line-height:1.55;margin:12px 0 0}
+  .sub b{color:var(--ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:20px;align-items:center}
+  .legend .item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .legend .sw{width:11px;height:11px;border-radius:999px}
+  .legend .tick{width:16px;height:16px;border-radius:999px;background:var(--accent);display:inline-flex;align-items:center;justify-content:center}
+  .legend .mono{font-family:var(--mono);font-size:11px;background:var(--card);border:1px solid var(--line);padding:2px 7px;border-radius:6px;color:var(--muted)}
+
+  .section{margin-top:54px}
+  .sechead{display:flex;align-items:baseline;gap:14px;padding:0 40px;margin-bottom:6px}
+  .sechead .k{width:26px;height:26px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
+  .sechead h2{font-size:20px;font-weight:800;letter-spacing:-0.3px;margin:0}
+  .sechead .hi{font-size:14px;font-weight:600;color:var(--muted)}
+  .secnote{padding:0 40px;color:var(--muted);font-size:13px;margin:0 0 16px;max-width:760px;line-height:1.5}
+
+  .track{display:flex;align-items:center;gap:16px;overflow-x:auto;padding:8px 40px 22px}
+  .screen{display:flex;flex-direction:column;gap:11px;flex:0 0 auto}
+  .slabel{display:flex;align-items:center;gap:8px;height:24px}
+  .slabel .n{width:24px;height:24px;border-radius:7px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex-shrink:0}
+  .slabel .nm{font-weight:700;font-size:13.5px}
+  .slabel .hi{font-weight:500;font-size:11.5px;color:var(--muted)}
+  .pbox{position:relative;width:225px;height:489px;flex:0 0 auto;filter:drop-shadow(0 24px 40px rgba(20,30,50,0.14))}
+  .scaler{position:absolute;top:0;left:0;width:402px;height:874px;transform:scale(0.56);transform-origin:top left}
+  .arrow{flex:0 0 auto;color:var(--accent);opacity:0.7;display:flex;align-items:center;margin-top:24px}
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="eyebrow"><span class="dot"></span>truckfinder · companion app · wireframe</div>
+    <h1>App flow <span class="hi">पूरा ऐप फ़्लो</span></h1>
+    <p class="sub">The demand-side companion to <b>maalgaadi</b>. Brokers search the truck database maalgaadi collects to find an <b>empty truck</b> of the right capacity nearby and tap to call. Distinct <b>blue</b> accent; every truck carries a <b>verified-by-maalgaadi</b> tick. Happy-path flow board.</p>
+    <div class="legend">
+      <span class="item"><span class="sw" style="background:var(--ok)"></span>Empty now</span>
+      <span class="item"><span class="sw" style="background:var(--warn)"></span>Empty soon</span>
+      <span class="item"><span class="sw" style="background:var(--muted)"></span>Loaded</span>
+      <span class="item"><span class="tick"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4 10-10" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>verified by maalgaadi</span>
+    </div>
+  </div>
+
+  <div id="board"></div>
+
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="22" fill="#2f63d9"/><g transform="translate(24 30)" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h26v18H2zM28 10h10l8 8v4H28z"/><circle cx="11" cy="26" r="3.8"/><circle cx="40" cy="26" r="3.8"/></g><circle cx="72" cy="66" r="13" fill="none" stroke="#fff" stroke-width="3.6"/><path d="M81 75l8 8" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/></svg>
+  </template>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../Downloads/maalgaadi-handoff/maalgaadi/project/ios-frame.jsx"></script>
+  <script type="text/babel" src="../../Downloads/maalgaadi-handoff/maalgaadi/project/kit.jsx"></script>
+  <script type="text/babel" src="../../Downloads/maalgaadi-handoff/maalgaadi/project/authScreens.jsx"></script>
+  <script type="text/babel" src="../../Downloads/maalgaadi-handoff/maalgaadi/project/finderScreens.jsx"></script>
+  <script type="text/babel" src="../../Downloads/maalgaadi-handoff/maalgaadi/project/finderDetail.jsx"></script>
+  <script type="text/babel">
+    const ARROW = '<svg width="30" height="20" viewBox="0 0 30 20" fill="none"><path d="M2 10h24m-7-6l7 6-7 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    const BOARD = [
+      { k:'1', title:'Auth', hi:'लॉगिन', note:'Phone + OTP are shared with maalgaadi — same account system. First-time brokers add a name & company so drivers know who is calling.', items:[
+        ['01','Splash','स्प्लैश','FinderSplash'],
+        ['02','Phone entry','फ़ोन','PhoneEntry'],
+        ['03','OTP verify','ओटीपी','OtpScreen'],
+        ['04','Broker setup','प्रोफ़ाइल','BrokerSetup'],
+      ]},
+      { k:'2', title:'Find', hi:'खोजें', note:'The launchpad: build a search by route, capacity & body type with “empty only” on by default, then scan dense results. Filters refine; active filters show as removable chips.', items:[
+        ['05','Home / search','खोज','FinderHome'],
+        ['06','Results','नतीजे','FinderResults'],
+        ['07','Filters','फ़िल्टर','FinderFilters'],
+      ]},
+      { k:'3', title:'Truck & contact', hi:'ट्रक · संपर्क', note:'Full truck detail with photos, specs, live location and the maalgaadi trust badge. Tap to call opens a confirm sheet with the number.', items:[
+        ['08','Truck detail','विवरण','TruckDetail'],
+        ['09','Call driver','कॉल','CallSheet'],
+      ]},
+      { k:'4', title:'Saved & alerts', hi:'सेव · अलर्ट', note:'Brokers shortlist trucks and save recurring searches — get pinged when a matching empty truck appears on the route.', items:[
+        ['10','Saved trucks','सेव ट्रक','SavedTrucks'],
+        ['11','Saved searches','अलर्ट','SavedSearches'],
+      ]},
+      { k:'5', title:'Account', hi:'खाता', note:'Profile with usage stats, settings (incl. language for localisation) and broker-oriented help.', items:[
+        ['12','Profile','प्रोफ़ाइल','FinderProfile'],
+        ['13','Settings','सेटिंग्स','FinderSettings'],
+        ['14','Help & support','मदद','FinderHelp'],
+      ]},
+    ];
+
+    function screenHTML(it){
+      return `<div class="screen" data-screen-label="${it[1]}">
+        <div class="slabel"><span class="n">${it[0]}</span><span class="nm">${it[1]}</span><span class="hi">${it[2]}</span></div>
+        <div class="pbox"><div class="scaler" data-comp="${it[3]}"></div></div>
+      </div>`;
+    }
+
+    let html = '';
+    BOARD.forEach(sec => {
+      html += `<div class="section"><div class="sechead"><span class="k">${sec.k}</span><h2>${sec.title}</h2><span class="hi">${sec.hi}</span></div>`;
+      html += `<p class="secnote">${sec.note}</p><div class="track">`;
+      sec.items.forEach((it, i) => {
+        if (i > 0) html += `<div class="arrow">${ARROW}</div>`;
+        html += screenHTML(it);
+      });
+      html += `</div></div>`;
+    });
+
+    document.getElementById('board').innerHTML = html;
+    document.querySelectorAll('.scaler[data-comp]').forEach(el => {
+      const Comp = window[el.dataset.comp];
+      if (Comp) ReactDOM.createRoot(el).render(<Comp />);
+    });
+  </script>
+</body>
+</html>
