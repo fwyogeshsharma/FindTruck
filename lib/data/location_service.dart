@@ -14,7 +14,7 @@ class PlaceResult {
   bool get ok => error == null && position != null;
 
   String get label {
-    final parts = [if (city != null) city!, if (state != null) state!];
+    final parts = [?city, ?state];
     return parts.isEmpty ? 'Location set' : parts.join(', ');
   }
 }
