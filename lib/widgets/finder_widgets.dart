@@ -116,7 +116,8 @@ class FinderTabBar extends StatelessWidget {
 
   static const _tabs = [
     ('grid', 'Dashboard'),
-    ('search', 'Find'),
+    // Find truck page hidden from the UI.
+    // ('search', 'Find'),
     ('bookmark', 'Saved'),
     ('person', 'Profile'),
   ];

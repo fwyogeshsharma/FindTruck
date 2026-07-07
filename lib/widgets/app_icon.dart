@@ -45,6 +45,7 @@ class AppIcon extends StatelessWidget {
     'filter': Icons.filter_alt_outlined,
     'swap': Icons.swap_vert,
     'bookmark': Icons.bookmark_border,
+    'bookmark-fill': Icons.bookmark,
     'map': Icons.map_outlined,
     'sort': Icons.swap_vert,
   };
