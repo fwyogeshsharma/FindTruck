@@ -159,12 +159,26 @@ class FinderTabBar extends StatelessWidget {
 }
 
 /// A truck list card (finderScreens.jsx `TruckRow`).
+///
+/// Tapping the card opens the truck detail; tapping the thumbnail image marks
+/// the truck on the dashboard map (via [onThumbTap]). [selected] draws the
+/// accent highlight when this truck is the one pinned on the map.
 class TruckRow extends StatelessWidget {
-  const TruckRow({super.key, required this.truck, this.savedNote, this.onTap, this.onCall});
+  const TruckRow({
+    super.key,
+    required this.truck,
+    this.savedNote,
+    this.onTap,
+    this.onCall,
+    this.onThumbTap,
+    this.selected = false,
+  });
   final Truck truck;
   final String? savedNote;
   final VoidCallback? onTap;
   final VoidCallback? onCall;
+  final VoidCallback? onThumbTap;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -179,14 +193,16 @@ class TruckRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: selected ? AppColors.accentSoft : AppColors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.line),
+          border: Border.all(
+              color: selected ? AppColors.accent : AppColors.line,
+              width: selected ? 1.5 : 1),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ThumbBox(size: 58, label: 'truck'),
+            _thumb(),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -250,6 +266,46 @@ class TruckRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Truck thumbnail. When [onThumbTap] is set and the truck has a live GPS
+  /// fix, tapping it marks the truck on the dashboard map; a small pin badge
+  /// hints at the action.
+  Widget _thumb() {
+    final canLocate = onThumbTap != null && truck.hasLiveLocation;
+    final thumb = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ThumbBox(
+          size: 58,
+          label: 'truck',
+          radius: 12,
+        ),
+        if (canLocate)
+          Positioned(
+            right: -4,
+            bottom: -4,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: selected ? AppColors.accent : AppColors.card,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.accent, width: 1.5),
+              ),
+              child: AppIcon('pin',
+                  size: 12,
+                  color: selected ? Colors.white : AppColors.accent),
+            ),
+          ),
+      ],
+    );
+    if (!canLocate) return thumb;
+    return GestureDetector(
+      onTap: onThumbTap,
+      behavior: HitTestBehavior.opaque,
+      child: thumb,
     );
   }
 }

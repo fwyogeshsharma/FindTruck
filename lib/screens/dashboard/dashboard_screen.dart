@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/location_service.dart';
@@ -44,13 +46,27 @@ class DashboardTab extends StatefulWidget {
 
 class _DashboardTabState extends State<DashboardTab> {
   final _location = LocationService();
+  final _mapController = MapController();
   late Future<_DashboardData> _future;
   bool _inCityOnly = true;
+
+  /// Id of the truck currently pinned/focused on the dashboard map, set by
+  /// tapping a list item's thumbnail.
+  String? _selectedId;
+
+  /// Fallback map centre (Pune) when neither the device nor any truck has a fix.
+  static const _fallbackCenter = LatLng(18.5204, 73.8567);
 
   @override
   void initState() {
     super.initState();
     _future = _load();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
   }
 
   Future<_DashboardData> _load() async {
@@ -177,12 +193,19 @@ class _DashboardTabState extends State<DashboardTab> {
         ? data.items.where((i) => i.inCity).toList()
         : data.items;
 
+    // Trucks with a real GPS fix from the API — these get map markers.
+    final located = list.where((i) => i.truck.hasLiveLocation).toList();
+
     return RefreshIndicator(
       color: AppColors.accent,
       onRefresh: _refresh,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         children: [
+          if (located.isNotEmpty) ...[
+            _map(located, place),
+            const SizedBox(height: 12),
+          ],
           if (!place.ok)
             _notice(
                 'Showing all vehicles. ${place.error ?? 'Location unavailable.'} Tap the location chip to retry.',
@@ -238,13 +261,152 @@ class _DashboardTabState extends State<DashboardTab> {
             for (final item in list) ...[
               TruckRow(
                 truck: item.display,
+                selected: _selectedId == item.truck.id,
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => TruckDetailScreen(truck: item.truck))),
+                onThumbTap: item.truck.hasLiveLocation
+                    ? () => _focusOnMap(item.truck)
+                    : null,
                 onCall: () => showCallSheet(context, item.truck),
               ),
               const SizedBox(height: 10),
             ],
         ],
+      ),
+    );
+  }
+
+  /// Pins [truck] on the dashboard map and pans/zooms the map to it. Triggered
+  /// by tapping the truck's thumbnail in the list.
+  void _focusOnMap(Truck truck) {
+    setState(() => _selectedId = truck.id);
+    _mapController.move(truck.location, 15);
+  }
+
+  /// Dashboard overview map: every located truck as a marker, sourced from the
+  /// API geolocation. The selected marker is enlarged; tapping any marker opens
+  /// that truck's detail screen.
+  Widget _map(List<_Item> located, PlaceResult place) {
+    // Centre on the pinned truck, else the device, else the first truck.
+    _Item? selected;
+    for (final i in located) {
+      if (i.truck.id == _selectedId) {
+        selected = i;
+        break;
+      }
+    }
+    final center = selected?.truck.location ??
+        (place.ok
+            ? LatLng(place.position!.latitude, place.position!.longitude)
+            : located.isNotEmpty
+                ? located.first.truck.location
+                : _fallbackCenter);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 210,
+        decoration: BoxDecoration(border: Border.all(color: AppColors.line)),
+        child: Stack(
+          children: [
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: 12,
+                interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.faberwork.truckfinder',
+                ),
+                // The device's own position, if known.
+                if (place.ok)
+                  MarkerLayer(markers: [
+                    Marker(
+                      point: LatLng(place.position!.latitude,
+                          place.position!.longitude),
+                      width: 22,
+                      height: 22,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.25),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: Colors.white, width: 2),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ]),
+                MarkerLayer(
+                  markers: [
+                    for (final item in located)
+                      _truckMarker(item, item.truck.id == _selectedId),
+                  ],
+                ),
+              ],
+            ),
+            // Hint / count chip.
+            Positioned(
+              left: 10,
+              top: 10,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppIcon('pin', size: 13, color: AppColors.accent),
+                    const SizedBox(width: 5),
+                    Text('${located.length} on map',
+                        style:
+                            AppText.sans(size: 11.5, weight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A single truck pin. The selected one is larger and coloured; tapping opens
+  /// the detail screen.
+  Marker _truckMarker(_Item item, bool selected) {
+    final size = selected ? 46.0 : 34.0;
+    return Marker(
+      point: item.truck.location,
+      width: size,
+      height: size,
+      alignment: Alignment.topCenter,
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _selectedId = item.truck.id);
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => TruckDetailScreen(truck: item.truck)));
+        },
+        child: AppIcon('pin',
+            size: size,
+            color: selected ? AppColors.accent : AppColors.muted),
       ),
     );
   }
