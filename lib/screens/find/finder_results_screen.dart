@@ -40,10 +40,15 @@ class _FinderResultsScreenState extends State<FinderResultsScreen> {
   Widget build(BuildContext context) {
     final q = context.watch<AppState>().query;
     final chips = <String>[
+      if (q.location.trim().isNotEmpty) q.location.trim(),
       if (q.emptyOnly) 'Empty now',
-      '${q.wheels}-wheel',
-      '${q.body} body',
+      if (q.wheels != 'Any') '${q.wheels}-wheel',
+      if (q.body != 'Any') q.body,
+      if (q.axle != 'Any') q.axle,
     ];
+    final subtitle = q.location.trim().isEmpty
+        ? 'All locations${q.emptyOnly ? ' · empty now' : ''}'
+        : '${q.location.trim()}${q.emptyOnly ? ' · empty now' : ''}';
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -61,7 +66,7 @@ class _FinderResultsScreenState extends State<FinderResultsScreen> {
                       children: [
                         Text('${_count ?? '…'} trucks',
                             style: AppText.sans(size: 17, weight: FontWeight.w800)),
-                        Text('${q.fromArea.split(',').first} → ${q.toArea} · empty now',
+                        Text(subtitle,
                             style: AppText.sans(size: 11.5, color: AppColors.muted)),
                       ],
                     ),
@@ -122,6 +127,28 @@ class _FinderResultsScreenState extends State<FinderResultsScreen> {
                         child: CircularProgressIndicator(color: AppColors.accent));
                   }
                   final trucks = snap.data!;
+                  if (trucks.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppIcon('truck', size: 40, color: AppColors.line),
+                            const SizedBox(height: 12),
+                            Text('No trucks match these filters',
+                                style:
+                                    AppText.sans(weight: FontWeight.w700)),
+                            const SizedBox(height: 4),
+                            Text('Try “Any” for some fields or a different location.',
+                                textAlign: TextAlign.center,
+                                style: AppText.sans(
+                                    size: 12.5, color: AppColors.muted)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
                   return ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     itemCount: trucks.length,

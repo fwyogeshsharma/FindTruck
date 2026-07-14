@@ -29,27 +29,65 @@ class RestTruckRepository implements TruckRepository {
 
   final ApiClient _api;
 
-  // Small cache so the home banner / saved lists don't re-hit the API.
+  // The API caps `limit` at 200 and paginates with `offset`.
+  static const _pageSize = 200;
+  // Safety bound so a runaway dataset can't loop forever (200 * 25 = 5000).
+  static const _maxPages = 25;
+
+  // Small cache of the full (unfiltered) fetch so the home banner / saved
+  // lists / dashboard don't re-hit the API. Only the no-query fetch is cached.
   List<Truck>? _lastFetch;
 
-  Future<List<Truck>> _fetchAll() async {
-    final data = await _api.getJson('/api/trucks', {'limit': 100});
-    final list = (data as List)
-        .whereType<Map>()
-        .map((e) => Truck.fromJson(e.cast<String, dynamic>()))
-        .toList();
-    _lastFetch = list;
-    return list;
+  /// Fetches every truck by paging through the API. When [q] is set it is sent
+  /// as the server-side free-text query (`?q=`) and results are not cached.
+  Future<List<Truck>> _fetchAll({String? q}) async {
+    final all = <Truck>[];
+    for (var page = 0; page < _maxPages; page++) {
+      final data = await _api.getJson('/api/trucks', {
+        'limit': _pageSize,
+        'offset': page * _pageSize,
+        if (q != null && q.isNotEmpty) 'q': q,
+      });
+      final rows = (data as List)
+          .whereType<Map>()
+          .map((e) => Truck.fromJson(e.cast<String, dynamic>()))
+          .toList();
+      all.addAll(rows);
+      if (rows.length < _pageSize) break; // last page reached
+    }
+    if (q == null || q.isEmpty) _lastFetch = all;
+    return all;
   }
 
   @override
   Future<List<Truck>> search(TruckQuery q) async {
-    final all = await _fetchAll();
+    final loc = q.location.trim();
+    final all = await _fetchAll(q: loc.isEmpty ? null : loc);
     return all.where((t) {
       if (q.emptyOnly && t.availability == Availability.loaded) return false;
       if (q.verifiedOnly && !t.verifiedByMaalgaadi) return false;
+      if (q.wheels != 'Any' && !_wheelsMatch(t.wheels, q.wheels)) return false;
+      if (q.body != 'Any' &&
+          !t.body.toLowerCase().contains(q.body.toLowerCase())) {
+        return false;
+      }
+      if (q.axle != 'Any' &&
+          t.axle.toLowerCase() != q.axle.toLowerCase()) {
+        return false;
+      }
       return true;
     }).toList();
+  }
+
+  /// Matches a truck's wheel count against a filter value. '16+' means 16 or
+  /// more; otherwise an exact match on the numeric count.
+  static bool _wheelsMatch(String truckWheels, String filter) {
+    if (filter.endsWith('+')) {
+      final min = int.tryParse(filter.replaceAll('+', ''));
+      final w = int.tryParse(truckWheels);
+      return min != null && w != null && w >= min;
+    }
+    return truckWheels == filter;
   }
 
   @override

@@ -50,6 +50,10 @@ class _DashboardTabState extends State<DashboardTab> {
   late Future<_DashboardData> _future;
   bool _inCityOnly = true;
 
+  /// How the vehicle list is ordered. Defaults to newest-added first so the
+  /// latest truck reported to the API sits at the top.
+  String _sortMode = 'latest'; // 'latest' | 'nearest'
+
   /// Id of the truck currently pinned/focused on the dashboard map, set by
   /// tapping a list item's thumbnail.
   String? _selectedId;
@@ -94,9 +98,37 @@ class _DashboardTabState extends State<DashboardTab> {
       }
       items.add(_Item(t, distanceKm: dist, city: city, inCity: inCity));
     }
-    items.sort((a, b) =>
-        (a.distanceKm ?? 1e9).compareTo(b.distanceKm ?? 1e9));
     return _DashboardData(place, items);
+  }
+
+  /// Orders the list per [_sortMode]: newest-added first, or nearest first.
+  List<_Item> _sorted(List<_Item> items) {
+    final list = [...items];
+    if (_sortMode == 'nearest') {
+      list.sort(
+          (a, b) => (a.distanceKm ?? 1e9).compareTo(b.distanceKm ?? 1e9));
+    } else {
+      // Latest added first — items without a timestamp fall to the bottom.
+      list.sort((a, b) {
+        final ax = a.truck.createdAt, bx = b.truck.createdAt;
+        if (ax == null && bx == null) return 0;
+        if (ax == null) return 1;
+        if (bx == null) return -1;
+        return bx.compareTo(ax);
+      });
+    }
+    return list;
+  }
+
+  /// The most recently added vehicle across the whole (unfiltered) dataset.
+  _Item? _latestOf(List<_Item> items) {
+    _Item? best;
+    for (final i in items) {
+      final t = i.truck.createdAt;
+      if (t == null) continue;
+      if (best == null || t.isAfter(best.truck.createdAt!)) best = i;
+    }
+    return best;
   }
 
   Future<void> _refresh() async {
@@ -189,9 +221,13 @@ class _DashboardTabState extends State<DashboardTab> {
     final place = data.place;
     final hasCity = place.ok && place.city != null;
     final showInCity = _inCityOnly && place.ok;
-    final list = showInCity
+    final filtered = showInCity
         ? data.items.where((i) => i.inCity).toList()
         : data.items;
+    final list = _sorted(filtered);
+
+    // The single newest-added vehicle, highlighted at the top of the list.
+    final latest = _latestOf(data.items);
 
     // Trucks with a real GPS fix from the API — these get map markers.
     final located = list.where((i) => i.truck.hasLiveLocation).toList();
@@ -218,6 +254,11 @@ class _DashboardTabState extends State<DashboardTab> {
                     : 'Got your location but could not name the city; matching within ~50 km.',
                 AppColors.accent,
                 AppColors.accentSoft),
+          // Latest-added vehicle, always pinned to the top.
+          if (latest != null) ...[
+            _latestCard(latest),
+            const SizedBox(height: 14),
+          ],
           // Count + filter toggle.
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -251,6 +292,21 @@ class _DashboardTabState extends State<DashboardTab> {
                       on: _inCityOnly,
                       onChanged: (v) => setState(() => _inCityOnly = v)),
                 ],
+              ],
+            ),
+          ),
+          // Sort control: newest-added vs nearest.
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Text('Sort',
+                    style: AppText.sans(
+                        size: 12.5, weight: FontWeight.w700, color: AppColors.muted)),
+                const SizedBox(width: 10),
+                _sortChip('Latest', 'latest'),
+                const SizedBox(width: 8),
+                _sortChip('Nearest', 'nearest'),
               ],
             ),
           ),
@@ -407,6 +463,106 @@ class _DashboardTabState extends State<DashboardTab> {
         child: AppIcon('pin',
             size: size,
             color: selected ? AppColors.accent : AppColors.muted),
+      ),
+    );
+  }
+
+  /// A pill toggle for the list sort mode.
+  Widget _sortChip(String label, String mode) {
+    final on = _sortMode == mode;
+    return GestureDetector(
+      onTap: () => setState(() => _sortMode = mode),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+        decoration: BoxDecoration(
+          color: on ? AppColors.accent : AppColors.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: on ? AppColors.accent : AppColors.line),
+        ),
+        child: Text(label,
+            style: AppText.sans(
+                size: 12.5,
+                weight: FontWeight.w700,
+                color: on ? Colors.white : AppColors.ink)),
+      ),
+    );
+  }
+
+  /// Highlight card for the most recently added vehicle.
+  Widget _latestCard(_Item item) {
+    final t = item.display;
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => TruckDetailScreen(truck: item.truck))),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.accentSoft,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.accentLine),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon('bolt', size: 15, color: AppColors.accent),
+                const SizedBox(width: 6),
+                Text('LATEST ADDED',
+                    style: AppText.sans(
+                        size: 11,
+                        weight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        color: AppColors.accent)),
+                const Spacer(),
+                Text('Added ${t.updated}',
+                    style: AppText.sans(size: 11.5, color: AppColors.muted)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(t.plate,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppText.sans(
+                                    size: 17, weight: FontWeight.w800)),
+                          ),
+                          const SizedBox(width: 6),
+                          const Verified(sm: true),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                          '${t.wheels}-wheel · ${t.body}'
+                          '${t.axle != '—' ? ' · ${t.axle}' : ''}',
+                          style: AppText.sans(
+                              size: 12.5,
+                              weight: FontWeight.w600,
+                              color: AppColors.muted)),
+                      const SizedBox(height: 3),
+                      Text('Driver: ${t.driverName}',
+                          style: AppText.sans(
+                              size: 12.5,
+                              weight: FontWeight.w700,
+                              color: AppColors.ink)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AvailChip(t.availability, sm: true),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

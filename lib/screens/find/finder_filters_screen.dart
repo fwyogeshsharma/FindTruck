@@ -33,58 +33,34 @@ class _FinderFiltersScreenState extends State<FinderFiltersScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 4, 18, 16),
                 children: [
-                  const FieldLabel('Route', hi: 'रूट'),
-                  RouteCard(
-                    from: _q.fromArea,
-                    to: _q.toArea,
-                    onSwap: () => setState(() =>
-                        _q = _q.copyWith(fromArea: _q.toArea, toArea: _q.fromArea)),
+                  Field(
+                    label: 'Location',
+                    hi: 'कहाँ से',
+                    value: _q.location,
+                    placeholder: 'City or area',
+                    prefix: '📍',
+                    keyboardType: TextInputType.streetAddress,
+                    onChanged: (v) => _q = _q.copyWith(location: v),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const FieldLabel('Distance', hi: 'दूरी'),
-                      Text('within ${_q.maxDistanceKm.round()} km',
-                          style: AppText.sans(
-                              size: 13,
-                              weight: FontWeight.w700,
-                              color: AppColors.accent)),
-                    ],
-                  ),
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: AppColors.accent,
-                      inactiveTrackColor: AppColors.bg,
-                      thumbColor: Colors.white,
-                      overlayColor: AppColors.accentSoft,
-                      trackHeight: 8,
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 11),
-                    ),
-                    child: Slider(
-                      value: _q.maxDistanceKm,
-                      min: 5,
-                      max: 50,
-                      onChanged: (v) =>
-                          setState(() => _q = _q.copyWith(maxDistanceKm: v)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const FieldLabel('Capacity (wheels)', hi: 'पहिये'),
+                  const FieldLabel('Axle type', hi: 'एक्सल'),
                   ChipRow(
-                      options: const ['6', '10', '12', '14', '16+'],
+                      options: const ['Any', 'Single-Axle', 'Multi-Axle'],
+                      value: _q.axle,
+                      onChanged: (v) => setState(() => _q = _q.copyWith(axle: v))),
+                  const SizedBox(height: 20),
+                  const FieldLabel('Wheels', hi: 'पहिये'),
+                  ChipRow(
+                      options: const ['Any', '4', '6', '10', '12', '14', '16'],
                       value: _q.wheels,
                       onChanged: (v) => setState(() => _q = _q.copyWith(wheels: v))),
                   const SizedBox(height: 20),
                   const FieldLabel('Body type', hi: 'बॉडी टाइप'),
                   ChipRow(
                       options: const [
-                        'Open',
+                        'Any',
+                        'Open Body',
+                        'Flat Bed',
                         'Container',
-                        'Tipper',
-                        'Trailer',
-                        'Tanker'
                       ],
                       value: _q.body,
                       onChanged: (v) => setState(() => _q = _q.copyWith(body: v))),
@@ -145,7 +121,7 @@ class _FinderFiltersScreenState extends State<FinderFiltersScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     flex: 2,
-                    child: PrimaryBtn('Show 86 trucks', onTap: () {
+                    child: PrimaryBtn('Apply filters', onTap: () {
                       context.read<AppState>().updateQuery(_q);
                       Navigator.pop(context);
                     }),

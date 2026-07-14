@@ -34,7 +34,7 @@ class _TruckDetailScreenState extends State<TruckDetailScreen> {
     final specs = [
       ('Capacity', '${t.wheels}-wheel', 'truck'),
       ('Body type', t.body, 'grid'),
-      ('Status', t.availability.label, 'bolt'),
+      ('Axle', t.axle == '—' ? 'N/A' : t.axle, 'bolt'),
     ];
     return Scaffold(
       body: Column(
@@ -325,8 +325,14 @@ class _TruckDetailScreenState extends State<TruckDetailScreen> {
               children: [
                 Text(t.driverName,
                     style: AppText.sans(size: 15, weight: FontWeight.w700)),
-                Text('Owner-driver · ${_maskPhone(t.phone)}',
+                Text('Driver${t.phone.isNotEmpty ? ' · ${_maskPhone(t.phone)}' : ''}',
                     style: AppText.sans(size: 12.5, color: AppColors.muted)),
+                if (t.reportedBy.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text('Reported by ${t.reportedBy}',
+                        style: AppText.sans(size: 11.5, color: AppColors.muted)),
+                  ),
               ],
             ),
           ),

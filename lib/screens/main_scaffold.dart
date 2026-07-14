@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/finder_widgets.dart';
 import 'account/finder_profile_screen.dart';
 import 'dashboard/dashboard_screen.dart';
-// Find truck page hidden from the UI.
-// import 'find/finder_home_screen.dart';
+import 'find/finder_home_screen.dart';
 import 'saved/saved_trucks_screen.dart';
 
 /// Host for the three primary tabs (Find / Saved / Profile) sharing the
@@ -31,8 +30,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                 index: _index,
                 children: const [
                   DashboardTab(),
-                  // Find truck page hidden from the UI.
-                  // FinderHomeTab(),
+                  FinderHomeTab(),
                   SavedTrucksTab(),
                   FinderProfileTab(),
                 ],

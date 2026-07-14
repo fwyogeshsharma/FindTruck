@@ -33,22 +33,28 @@ class Truck {
     required this.driverInitials,
     required this.phone,
     required this.location,
+    this.axle = '—',
+    this.reportedBy = '',
+    this.createdAt,
     this.photoCount = 4,
     this.verifiedByMaalgaadi = true,
   });
 
   final String id;
   final String plate;
-  final String wheels; // '6', '10', '12', '14', '16+'
-  final String body; // Open / Container / Tipper / Trailer / Tanker
+  final String wheels; // '4', '6', '10', '12', '14', '16'
+  final String body; // Open Body / Flat Bed / Container / …
+  final String axle; // Single-Axle / Multi-Axle / '—'
   final Availability availability;
   final String area;
   final String distanceKm;
   final String updated;
-  final String driverName;
+  final String driverName; // the vehicle's driver (NOT the reporter)
   final String driverInitials;
+  final String reportedBy; // the person who added/reported this truck
   final String phone;
   final LatLng location;
+  final DateTime? createdAt; // when the record was added, for "latest" sort
   final int photoCount;
   final bool verifiedByMaalgaadi;
 
@@ -57,14 +63,17 @@ class Truck {
         plate: plate,
         wheels: wheels,
         body: body,
+        axle: axle,
         availability: availability,
         area: area ?? this.area,
         distanceKm: distanceKm ?? this.distanceKm,
         updated: updated ?? this.updated,
         driverName: driverName,
         driverInitials: driverInitials,
+        reportedBy: reportedBy,
         phone: phone,
         location: location ?? this.location,
+        createdAt: createdAt,
         photoCount: photoCount,
         verifiedByMaalgaadi: verifiedByMaalgaadi,
       );
@@ -80,7 +89,11 @@ class Truck {
       return (v is String && v.trim().isNotEmpty) ? v : null;
     }
 
-    final name = str('reported_by') ?? str('company_name') ?? 'Owner-driver';
+    // The driver's name — falls back to a neutral label when the report did
+    // not capture it. We deliberately do NOT fall back to `reported_by` here:
+    // the person who added the truck is not the driver.
+    final driver = str('driver_name') ?? 'Owner-driver';
+    final reporter = str('reported_by') ?? str('company_name') ?? '';
     final phone = str('phone_number') ??
         str('phone_reported') ??
         str('reporter_phone') ??
@@ -94,15 +107,18 @@ class Truck {
       id: '${j['id']}',
       plate: str('license_plate') ?? '—',
       wheels: j['num_wheels'] != null ? '${j['num_wheels']}' : '—',
-      body: str('vehicle_type') ?? 'Truck',
+      body: str('body_type') ?? str('vehicle_type') ?? 'Truck',
+      axle: str('axle_type') ?? '—',
       availability: _availability('${j['loaded_status'] ?? ''}'),
-      area: str('city') ?? str('location') ?? str('source') ?? '—',
+      area: str('city') ?? str('location') ?? '—',
       distanceKm: '',
       updated: _relativeTime(str('detected_at') ?? str('created_at')),
-      driverName: name,
-      driverInitials: _initials(name),
+      driverName: driver,
+      driverInitials: _initials(driver),
+      reportedBy: reporter,
       phone: phone,
       location: LatLng(lat, lng),
+      createdAt: DateTime.tryParse(str('created_at') ?? str('detected_at') ?? ''),
       photoCount: (j['frames'] is int && j['frames'] > 0) ? j['frames'] as int : 4,
       verifiedByMaalgaadi: review == 'PASSED' || verification == 'VERIFIED',
     );
@@ -111,6 +127,7 @@ class Truck {
   static Availability _availability(String loadedStatus) {
     switch (loadedStatus.toUpperCase()) {
       case 'EMPTY':
+      case 'UNLOADED':
         return Availability.empty;
       case 'LOADED':
         return Availability.loaded;
@@ -141,48 +158,61 @@ class Truck {
   }
 }
 
-/// A search built on the finder home screen.
+/// A search built on the Find Vehicle screen. `'Any'` on a chip field (or an
+/// empty [location]) means "don't filter on this".
 class TruckQuery {
   const TruckQuery({
-    this.fromArea = 'Pune, Hadapsar',
-    this.toArea = 'Mumbai',
-    this.wheels = '10',
-    this.body = 'Open',
-    this.emptyOnly = true,
-    this.verifiedOnly = true,
+    this.location = '',
+    this.wheels = 'Any',
+    this.body = 'Any',
+    this.axle = 'Any',
+    this.emptyOnly = false,
+    this.verifiedOnly = false,
     this.maxDistanceKm = 25,
-    this.availability = 'Empty now',
+    this.availability = 'All',
   });
 
-  final String fromArea;
-  final String toArea;
+  /// Location the finder wants a truck from (matched against the truck's
+  /// city/location, and passed to the API as a free-text query).
+  final String location;
   final String wheels;
   final String body;
+  final String axle;
   final bool emptyOnly;
   final bool verifiedOnly;
   final double maxDistanceKm;
   final String availability;
 
   TruckQuery copyWith({
-    String? fromArea,
-    String? toArea,
+    String? location,
     String? wheels,
     String? body,
+    String? axle,
     bool? emptyOnly,
     bool? verifiedOnly,
     double? maxDistanceKm,
     String? availability,
   }) =>
       TruckQuery(
-        fromArea: fromArea ?? this.fromArea,
-        toArea: toArea ?? this.toArea,
+        location: location ?? this.location,
         wheels: wheels ?? this.wheels,
         body: body ?? this.body,
+        axle: axle ?? this.axle,
         emptyOnly: emptyOnly ?? this.emptyOnly,
         verifiedOnly: verifiedOnly ?? this.verifiedOnly,
         maxDistanceKm: maxDistanceKm ?? this.maxDistanceKm,
         availability: availability ?? this.availability,
       );
+
+  /// Number of active (non-"Any") structured filters — for the filter badge.
+  int get activeCount => [
+        location.trim().isNotEmpty,
+        wheels != 'Any',
+        body != 'Any',
+        axle != 'Any',
+        emptyOnly,
+        verifiedOnly,
+      ].where((v) => v).length;
 }
 
 /// A saved recurring search / alert.
