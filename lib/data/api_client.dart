@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -36,17 +37,49 @@ class ApiClient {
   }
 
   Future<dynamic> getJson(String path, [Map<String, dynamic>? query]) async {
-    final res = await http
-        .get(_uri(path, query), headers: _headers())
-        .timeout(const Duration(seconds: 20));
-    return _decode(res, 'GET $path');
+    return _withRetry('GET $path', () async {
+      final res = await http
+          .get(_uri(path, query), headers: _headers())
+          .timeout(const Duration(seconds: 30));
+      return _decode(res, 'GET $path');
+    });
   }
 
   Future<dynamic> postJson(String path, Map<String, dynamic> body) async {
-    final res = await http
-        .post(_uri(path), headers: _headers(json: true), body: jsonEncode(body))
-        .timeout(const Duration(seconds: 20));
-    return _decode(res, 'POST $path');
+    return _withRetry('POST $path', () async {
+      final res = await http
+          .post(_uri(path), headers: _headers(json: true), body: jsonEncode(body))
+          .timeout(const Duration(seconds: 30));
+      return _decode(res, 'POST $path');
+    });
+  }
+
+  /// Retries a request when the connection drops mid-transfer. The truck API
+  /// occasionally closes the socket while streaming a page ("Connection closed
+  /// while receiving data") or times out; those are transient, so we back off
+  /// and try again. Real HTTP errors ([ApiException]) are not retried.
+  Future<dynamic> _withRetry(String label, Future<dynamic> Function() send,
+      {int attempts = 3}) async {
+    for (var attempt = 1; ; attempt++) {
+      try {
+        return await send();
+      } on ApiException {
+        rethrow; // 4xx/5xx are not transient — surface them immediately.
+      } catch (e) {
+        if (!_isTransient(e) || attempt >= attempts) {
+          throw ApiException(0, '$label failed after $attempt attempt(s): $e');
+        }
+        // Backoff: 400ms, 800ms, ...
+        await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+      }
+    }
+  }
+
+  static bool _isTransient(Object e) {
+    if (e is http.ClientException || e is TimeoutException) return true;
+    // SocketException lives in dart:io, which isn't importable on web, so match
+    // it (and similar low-level network drops) by type name instead.
+    return e.runtimeType.toString() == 'SocketException';
   }
 
   dynamic _decode(http.Response res, String label) {

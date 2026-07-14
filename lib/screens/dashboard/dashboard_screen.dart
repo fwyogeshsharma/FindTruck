@@ -73,30 +73,34 @@ class _DashboardTabState extends State<DashboardTab> {
     super.dispose();
   }
 
+  /// How many recent vehicles the dashboard loads. Bounded so the page loads
+  /// fast and never times out fetching the entire (~7.5k row) table.
+  static const _fetchLimit = 200;
+
   Future<_DashboardData> _load() async {
     final repo = context.read<AppState>().repo;
-    // All vehicles, unfiltered (this is a dashboard, not a search).
+    // Recent vehicles, unfiltered and newest-first (this is a dashboard, not a
+    // search). Bounded to a page so it loads quickly instead of the whole table.
     final all = await repo.search(
-        const TruckQuery(emptyOnly: false, verifiedOnly: false));
+        const TruckQuery(emptyOnly: false, verifiedOnly: false),
+        limit: _fetchLimit);
     final place = await _location.currentPlace();
 
     final items = <_Item>[];
     for (final t in all) {
       double? dist;
-      String? city;
       bool inCity = false;
       if (place.ok && t.hasLiveLocation) {
         final p = place.position!;
         dist = _location.distanceKm(
             p.latitude, p.longitude, t.location.latitude, t.location.longitude);
-        city = await _location.cityFor(t.location.latitude, t.location.longitude);
-        final sameName = city != null &&
-            place.city != null &&
-            city.toLowerCase() == place.city!.toLowerCase();
-        // "In my city" = same city name, or within ~50 km when names are absent.
-        inCity = sameName || dist <= 50;
+        // "In my city" = within ~50 km. We match by distance rather than
+        // reverse-geocoding each truck's city name: a per-truck geocode ran
+        // serially over the whole list and was blowing past the request
+        // timeout ("Future not completed").
+        inCity = dist <= 50;
       }
-      items.add(_Item(t, distanceKm: dist, city: city, inCity: inCity));
+      items.add(_Item(t, distanceKm: dist, city: null, inCity: inCity));
     }
     return _DashboardData(place, items);
   }

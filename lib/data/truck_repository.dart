@@ -9,8 +9,14 @@ import 'api_client.dart';
 /// Source of truck data. The truckfinder app reads the FreightDesk truck
 /// database and tracks a truck's live location off that shared API.
 abstract class TruckRepository {
-  /// Run a search and return matching trucks.
-  Future<List<Truck>> search(TruckQuery query);
+  /// Run a search and return matching trucks. When [limit] is set, fetching
+  /// stops once that many rows have been read from the API (used by the
+  /// dashboard to load a bounded, recent page instead of the whole table).
+  Future<List<Truck>> search(TruckQuery query, {int? limit});
+
+  /// Distinct city/area names known to the data source, sorted — powers the
+  /// location autocomplete on the Find Vehicle screen.
+  Future<List<String>> cities();
 
   /// Look up a single truck by id (for the detail screen / deep links).
   Future<Truck?> byId(String id);
@@ -22,6 +28,20 @@ abstract class TruckRepository {
   Future<int> emptyNowCount();
 }
 
+/// Distinct, sorted city names from [trucks], skipping blanks/placeholders.
+/// Case-insensitive de-dup, keeping the first-seen spelling for display.
+List<String> _distinctCities(Iterable<Truck> trucks) {
+  final byLower = <String, String>{};
+  for (final t in trucks) {
+    final city = t.area.trim();
+    if (city.isEmpty || city == '—') continue;
+    byLower.putIfAbsent(city.toLowerCase(), () => city);
+  }
+  final list = byLower.values.toList()
+    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  return list;
+}
+
 /// Live implementation backed by the FreightDesk REST API
 /// (`GET /api/trucks`). Works on mobile and web.
 class RestTruckRepository implements TruckRepository {
@@ -29,10 +49,13 @@ class RestTruckRepository implements TruckRepository {
 
   final ApiClient _api;
 
-  // The API caps `limit` at 200 and paginates with `offset`.
-  static const _pageSize = 200;
-  // Safety bound so a runaway dataset can't loop forever (200 * 25 = 5000).
-  static const _maxPages = 25;
+  // The API caps `limit` at 200, but large pages make the server drop the
+  // connection mid-transfer ("Connection closed while receiving data"), so we
+  // request smaller pages to keep each response light.
+  static const _pageSize = 50;
+  // Safety bound so a runaway dataset can't loop forever. Sized to cover the
+  // full table with headroom (50 * 400 = 20000 rows).
+  static const _maxPages = 400;
 
   // Small cache of the full (unfiltered) fetch so the home banner / saved
   // lists / dashboard don't re-hit the API. Only the no-query fetch is cached.
@@ -40,7 +63,7 @@ class RestTruckRepository implements TruckRepository {
 
   /// Fetches every truck by paging through the API. When [q] is set it is sent
   /// as the server-side free-text query (`?q=`) and results are not cached.
-  Future<List<Truck>> _fetchAll({String? q}) async {
+  Future<List<Truck>> _fetchAll({String? q, int? maxRows}) async {
     final all = <Truck>[];
     for (var page = 0; page < _maxPages; page++) {
       final data = await _api.getJson('/api/trucks', {
@@ -54,16 +77,24 @@ class RestTruckRepository implements TruckRepository {
           .toList();
       all.addAll(rows);
       if (rows.length < _pageSize) break; // last page reached
+      if (maxRows != null && all.length >= maxRows) break; // caller's cap hit
     }
-    if (q == null || q.isEmpty) _lastFetch = all;
+    // Only the complete, unfiltered fetch is worth caching for reuse.
+    if ((q == null || q.isEmpty) && maxRows == null) _lastFetch = all;
     return all;
   }
 
   @override
-  Future<List<Truck>> search(TruckQuery q) async {
+  Future<List<Truck>> search(TruckQuery q, {int? limit}) async {
     final loc = q.location.trim();
-    final all = await _fetchAll(q: loc.isEmpty ? null : loc);
+    final all = await _fetchAll(q: loc.isEmpty ? null : loc, maxRows: limit);
     return all.where((t) {
+      // Exact city match. The server `?q=` is a substring search, so a query
+      // like "Agra" also returns "Prayagraj" (…pray·agra·j); pin it to the
+      // truck's actual city so only that city's trucks show.
+      if (loc.isNotEmpty && t.area.trim().toLowerCase() != loc.toLowerCase()) {
+        return false;
+      }
       if (q.emptyOnly && t.availability == Availability.loaded) return false;
       if (q.verifiedOnly && !t.verifiedByMaalgaadi) return false;
       if (q.wheels != 'Any' && !_wheelsMatch(t.wheels, q.wheels)) return false;
@@ -88,6 +119,12 @@ class RestTruckRepository implements TruckRepository {
       return min != null && w != null && w >= min;
     }
     return truckWheels == filter;
+  }
+
+  @override
+  Future<List<String>> cities() async {
+    final all = _lastFetch ?? await _fetchAll();
+    return _distinctCities(all);
   }
 
   @override
@@ -207,14 +244,22 @@ class MockTruckRepository implements TruckRepository {
   ];
 
   @override
-  Future<List<Truck>> search(TruckQuery q) async {
+  Future<List<Truck>> search(TruckQuery q, {int? limit}) async {
     await Future<void>.delayed(const Duration(milliseconds: 350));
-    return _trucks.where((t) {
+    final loc = q.location.trim();
+    final res = _trucks.where((t) {
+      if (loc.isNotEmpty && t.area.trim().toLowerCase() != loc.toLowerCase()) {
+        return false;
+      }
       if (q.emptyOnly && t.availability == Availability.loaded) return false;
       if (q.verifiedOnly && !t.verifiedByMaalgaadi) return false;
       return true;
     }).toList();
+    return (limit != null && res.length > limit) ? res.sublist(0, limit) : res;
   }
+
+  @override
+  Future<List<String>> cities() async => _distinctCities(_trucks);
 
   @override
   Future<Truck?> byId(String id) async =>
