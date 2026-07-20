@@ -14,6 +14,11 @@ abstract class TruckRepository {
   /// dashboard to load a bounded, recent page instead of the whole table).
   Future<List<Truck>> search(TruckQuery query, {int? limit});
 
+  /// Incremental version of [search] for the results list: returns a pager that
+  /// yields the first few matches quickly and fetches the rest on scroll,
+  /// instead of downloading the whole table before painting anything.
+  TruckPager pager(TruckQuery query);
+
   /// Distinct city/area names known to the data source, sorted — powers the
   /// location autocomplete on the Find Vehicle screen.
   Future<List<String>> cities();
@@ -26,6 +31,93 @@ abstract class TruckRepository {
 
   /// How many trucks are empty right now near the user (home banner).
   Future<int> emptyNowCount();
+}
+
+/// Pull-based pager over a filtered truck search.
+///
+/// The API can only filter by location (`?q=`); wheels/body/axle/availability
+/// are applied client-side, so a 50-row server page can yield zero matches.
+/// [loadMore] therefore keeps pulling server pages until it has collected
+/// [want] matches, its scan budget for this call runs out, or the table ends —
+/// which is what lets the list paint after one round-trip instead of ~150.
+class TruckPager {
+  TruckPager({
+    required this.fetchPage,
+    required this.matches,
+    this.pageSize = 50,
+    this.scanBudget = 8,
+  });
+
+  /// Reads one raw (unfiltered) server page.
+  final Future<List<Truck>> Function(int offset, int limit) fetchPage;
+
+  /// Client-side filter predicate for the active query.
+  final bool Function(Truck truck) matches;
+
+  final int pageSize;
+
+  /// Max server pages read in a single [loadMore] call, so one call can never
+  /// block on scanning the whole table when the filter is very selective.
+  final int scanBudget;
+
+  /// Matches found so far, in server order.
+  final List<Truck> items = [];
+
+  int _offset = 0;
+  bool _exhausted = false;
+  bool _loading = false;
+
+  /// False once the server has no more rows — only then is [items] complete.
+  bool get hasMore => !_exhausted;
+  bool get isLoading => _loading;
+
+  /// Pulls pages until [want] new matches are found. Returns how many were
+  /// added; 0 with [hasMore] still true means "scanned, all misses, ask again".
+  Future<int> loadMore({int want = 10}) async {
+    if (_loading || _exhausted) return 0;
+    _loading = true;
+    var added = 0;
+    try {
+      for (var scanned = 0; scanned < scanBudget && !_exhausted; scanned++) {
+        final rows = await fetchPage(_offset, pageSize);
+        _offset += rows.length;
+        if (rows.length < pageSize) _exhausted = true; // last page reached
+        for (final t in rows) {
+          if (matches(t)) {
+            items.add(t);
+            added++;
+          }
+        }
+        if (added >= want) break;
+      }
+    } finally {
+      _loading = false;
+    }
+    return added;
+  }
+}
+
+/// Whether [t] satisfies [q]. [loc] is the trimmed query location, passed in so
+/// callers that already computed it don't redo the work per row.
+bool _matchesQuery(Truck t, TruckQuery q, String loc) {
+  // Exact city match. The server `?q=` is a substring search, so a query
+  // like "Agra" also returns "Prayagraj" (…pray·agra·j); pin it to the
+  // truck's actual city so only that city's trucks show.
+  if (loc.isNotEmpty && t.area.trim().toLowerCase() != loc.toLowerCase()) {
+    return false;
+  }
+  if (q.emptyOnly && t.availability == Availability.loaded) return false;
+  if (q.verifiedOnly && !t.verifiedByMaalgaadi) return false;
+  if (q.wheels != 'Any' && !RestTruckRepository._wheelsMatch(t.wheels, q.wheels)) {
+    return false;
+  }
+  if (q.body != 'Any' && !t.body.toLowerCase().contains(q.body.toLowerCase())) {
+    return false;
+  }
+  if (q.axle != 'Any' && t.axle.toLowerCase() != q.axle.toLowerCase()) {
+    return false;
+  }
+  return true;
 }
 
 /// Distinct, sorted city names from [trucks], skipping blanks/placeholders.
@@ -66,15 +158,7 @@ class RestTruckRepository implements TruckRepository {
   Future<List<Truck>> _fetchAll({String? q, int? maxRows}) async {
     final all = <Truck>[];
     for (var page = 0; page < _maxPages; page++) {
-      final data = await _api.getJson('/api/trucks', {
-        'limit': _pageSize,
-        'offset': page * _pageSize,
-        if (q != null && q.isNotEmpty) 'q': q,
-      });
-      final rows = (data as List)
-          .whereType<Map>()
-          .map((e) => Truck.fromJson(e.cast<String, dynamic>()))
-          .toList();
+      final rows = await _fetchPage(page * _pageSize, _pageSize, q: q);
       all.addAll(rows);
       if (rows.length < _pageSize) break; // last page reached
       if (maxRows != null && all.length >= maxRows) break; // caller's cap hit
@@ -84,30 +168,35 @@ class RestTruckRepository implements TruckRepository {
     return all;
   }
 
+  /// Reads a single raw page from the API.
+  Future<List<Truck>> _fetchPage(int offset, int limit, {String? q}) async {
+    final data = await _api.getJson('/api/trucks', {
+      'limit': limit,
+      'offset': offset,
+      if (q != null && q.isNotEmpty) 'q': q,
+    });
+    return (data as List)
+        .whereType<Map>()
+        .map((e) => Truck.fromJson(e.cast<String, dynamic>()))
+        .toList();
+  }
+
   @override
   Future<List<Truck>> search(TruckQuery q, {int? limit}) async {
     final loc = q.location.trim();
     final all = await _fetchAll(q: loc.isEmpty ? null : loc, maxRows: limit);
-    return all.where((t) {
-      // Exact city match. The server `?q=` is a substring search, so a query
-      // like "Agra" also returns "Prayagraj" (…pray·agra·j); pin it to the
-      // truck's actual city so only that city's trucks show.
-      if (loc.isNotEmpty && t.area.trim().toLowerCase() != loc.toLowerCase()) {
-        return false;
-      }
-      if (q.emptyOnly && t.availability == Availability.loaded) return false;
-      if (q.verifiedOnly && !t.verifiedByMaalgaadi) return false;
-      if (q.wheels != 'Any' && !_wheelsMatch(t.wheels, q.wheels)) return false;
-      if (q.body != 'Any' &&
-          !t.body.toLowerCase().contains(q.body.toLowerCase())) {
-        return false;
-      }
-      if (q.axle != 'Any' &&
-          t.axle.toLowerCase() != q.axle.toLowerCase()) {
-        return false;
-      }
-      return true;
-    }).toList();
+    return all.where((t) => _matchesQuery(t, q, loc)).toList();
+  }
+
+  @override
+  TruckPager pager(TruckQuery q) {
+    final loc = q.location.trim();
+    return TruckPager(
+      pageSize: _pageSize,
+      fetchPage: (offset, limit) =>
+          _fetchPage(offset, limit, q: loc.isEmpty ? null : loc),
+      matches: (t) => _matchesQuery(t, q, loc),
+    );
   }
 
   /// Matches a truck's wheel count against a filter value. '16+' means 16 or
@@ -182,7 +271,10 @@ class MockTruckRepository implements TruckRepository {
       updated: '20 min ago',
       driverName: 'Suresh K.',
       driverInitials: 'SK',
-      phone: '+919988765432',
+      phones: const [
+        TruckPhone('+919988765432', 'Driver'),
+        TruckPhone('+919820011223', 'Reporter · Maalgaadi desk'),
+      ],
       location: const LatLng(18.5018, 73.9407),
     ),
     Truck(
@@ -196,7 +288,7 @@ class MockTruckRepository implements TruckRepository {
       updated: '35 min ago',
       driverName: 'Imran S.',
       driverInitials: 'IS',
-      phone: '+919812345678',
+      phones: const [TruckPhone('+919812345678', 'Driver')],
       location: const LatLng(18.5985, 73.7625),
     ),
     Truck(
@@ -210,7 +302,7 @@ class MockTruckRepository implements TruckRepository {
       updated: '1 hr ago',
       driverName: 'Ramesh P.',
       driverInitials: 'RP',
-      phone: '+919900112233',
+      phones: const [TruckPhone('+919900112233', 'Driver')],
       location: const LatLng(18.5515, 73.9430),
     ),
     Truck(
@@ -224,7 +316,7 @@ class MockTruckRepository implements TruckRepository {
       updated: '2 hr ago',
       driverName: 'Anil G.',
       driverInitials: 'AG',
-      phone: '+919765432100',
+      phones: const [TruckPhone('+919765432100', 'Driver')],
       location: const LatLng(18.6298, 73.7997),
     ),
     Truck(
@@ -238,7 +330,7 @@ class MockTruckRepository implements TruckRepository {
       updated: '3 hr ago',
       driverName: 'Vikram J.',
       driverInitials: 'VJ',
-      phone: '+919654321098',
+      phones: const [TruckPhone('+919654321098', 'Driver')],
       location: const LatLng(18.5912, 73.7380),
     ),
   ];
@@ -247,15 +339,22 @@ class MockTruckRepository implements TruckRepository {
   Future<List<Truck>> search(TruckQuery q, {int? limit}) async {
     await Future<void>.delayed(const Duration(milliseconds: 350));
     final loc = q.location.trim();
-    final res = _trucks.where((t) {
-      if (loc.isNotEmpty && t.area.trim().toLowerCase() != loc.toLowerCase()) {
-        return false;
-      }
-      if (q.emptyOnly && t.availability == Availability.loaded) return false;
-      if (q.verifiedOnly && !t.verifiedByMaalgaadi) return false;
-      return true;
-    }).toList();
+    final res = _trucks.where((t) => _matchesQuery(t, q, loc)).toList();
     return (limit != null && res.length > limit) ? res.sublist(0, limit) : res;
+  }
+
+  @override
+  TruckPager pager(TruckQuery q) {
+    final loc = q.location.trim();
+    return TruckPager(
+      pageSize: 2, // small pages so the paging path is exercised offline
+      fetchPage: (offset, limit) async {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (offset >= _trucks.length) return const [];
+        return _trucks.sublist(offset, min(offset + limit, _trucks.length));
+      },
+      matches: (t) => _matchesQuery(t, q, loc),
+    );
   }
 
   @override

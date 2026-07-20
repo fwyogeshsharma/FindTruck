@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/truck_repository.dart';
 import '../../models/truck.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
@@ -19,32 +20,84 @@ class FinderResultsScreen extends StatefulWidget {
 }
 
 class _FinderResultsScreenState extends State<FinderResultsScreen> {
-  late Future<List<Truck>> _future;
-  int? _count;
+  /// How many matches to gather before the first paint, and per scroll refill.
+  static const _firstBatch = 10;
+  static const _nextBatch = 20;
+
+  final _scroll = ScrollController();
+  late TruckPager _pager;
+  bool _initialLoad = true;
+  Object? _error;
 
   @override
   void initState() {
     super.initState();
+    _scroll.addListener(_onScroll);
     _runSearch();
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
   }
 
   void _runSearch() {
     final state = context.read<AppState>();
-    _future = state.repo.search(state.query)
-      ..then((list) {
-        if (mounted) setState(() => _count = list.length);
+    _pager = state.repo.pager(state.query);
+    _initialLoad = true;
+    _error = null;
+    _loadMore(want: _firstBatch);
+  }
+
+  Future<void> _loadMore({int want = _nextBatch}) async {
+    if (_pager.isLoading || !_pager.hasMore) return;
+    final pager = _pager; // capture: a new search may replace it mid-flight
+    try {
+      final added = await pager.loadMore(want: want);
+      if (!mounted || pager != _pager) return;
+      setState(() => _initialLoad = false);
+      // A selective filter can produce an all-miss scan: nothing was added, so
+      // the list didn't grow and no scroll event will arrive to ask again.
+      // Keep pulling until we find matches or the table ends.
+      if (added == 0 && pager.hasMore) _loadMore(want: want);
+    } catch (e) {
+      if (!mounted || pager != _pager) return;
+      setState(() {
+        _initialLoad = false;
+        _error = e;
       });
+    }
+  }
+
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    final pos = _scroll.position;
+    // Refill well before the bottom so scrolling never stalls on a round-trip.
+    if (pos.pixels >= pos.maxScrollExtent - 600) _loadMore();
   }
 
   @override
   Widget build(BuildContext context) {
     final q = context.watch<AppState>().query;
-    final chips = <String>[
-      if (q.location.trim().isNotEmpty) q.location.trim(),
-      if (q.emptyOnly) 'Empty now',
-      if (q.wheels != 'Any') '${q.wheels}-wheel',
-      if (q.body != 'Any') q.body,
-      if (q.axle != 'Any') q.axle,
+    // Each chip carries the query it produces once removed. Availability is
+    // stored as two coupled fields (`availability` drives `emptyOnly` on the
+    // filters sheet), so clearing that chip has to reset both or the sheet
+    // reopens still showing the segment selected.
+    final chips = <({String label, TruckQuery cleared})>[
+      if (q.location.trim().isNotEmpty)
+        (label: q.location.trim(), cleared: q.copyWith(location: '')),
+      if (q.emptyOnly)
+        (
+          label: q.availability == 'All' ? 'Empty now' : q.availability,
+          cleared: q.copyWith(emptyOnly: false, availability: 'All'),
+        ),
+      if (q.verifiedOnly)
+        (label: 'Verified', cleared: q.copyWith(verifiedOnly: false)),
+      if (q.wheels != 'Any')
+        (label: '${q.wheels}-wheel', cleared: q.copyWith(wheels: 'Any')),
+      if (q.body != 'Any') (label: q.body, cleared: q.copyWith(body: 'Any')),
+      if (q.axle != 'Any') (label: q.axle, cleared: q.copyWith(axle: 'Any')),
     ];
     final subtitle = q.location.trim().isEmpty
         ? 'All locations${q.emptyOnly ? ' · empty now' : ''}'
@@ -64,7 +117,7 @@ class _FinderResultsScreenState extends State<FinderResultsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${_count ?? '…'} trucks',
+                        Text(_countLabel,
                             style: AppText.sans(size: 17, weight: FontWeight.w800)),
                         Text(subtitle,
                             style: AppText.sans(size: 11.5, color: AppColors.muted)),
@@ -107,66 +160,130 @@ class _FinderResultsScreenState extends State<FinderResultsScreen> {
                       bg: AppColors.accent,
                     ),
                   ),
+                  // Whole chip is the tap target — the 12px × alone is far
+                  // below a usable touch size.
                   for (final c in chips)
-                    _chip(
-                      label: c,
-                      trailing: AppIcon('close', size: 12, color: AppColors.accent),
-                      fg: AppColors.accent,
-                      bg: AppColors.accentSoft,
-                      border: AppColors.accentLine,
+                    GestureDetector(
+                      onTap: () => _removeFilter(c.cleared),
+                      child: _chip(
+                        label: c.label,
+                        trailing:
+                            AppIcon('close', size: 12, color: AppColors.accent),
+                        fg: AppColors.accent,
+                        bg: AppColors.accentSoft,
+                        border: AppColors.accentLine,
+                      ),
                     ),
                 ],
               ),
             ),
-            Expanded(
-              child: FutureBuilder<List<Truck>>(
-                future: _future,
-                builder: (context, snap) {
-                  if (!snap.hasData) {
-                    return const Center(
-                        child: CircularProgressIndicator(color: AppColors.accent));
-                  }
-                  final trucks = snap.data!;
-                  if (trucks.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AppIcon('truck', size: 40, color: AppColors.line),
-                            const SizedBox(height: 12),
-                            Text('No trucks match these filters',
-                                style:
-                                    AppText.sans(weight: FontWeight.w700)),
-                            const SizedBox(height: 4),
-                            Text('Try “Any” for some fields or a different location.',
-                                textAlign: TextAlign.center,
-                                style: AppText.sans(
-                                    size: 12.5, color: AppColors.muted)),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    itemCount: trucks.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => TruckRow(
-                      truck: trucks[i],
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => TruckDetailScreen(truck: trucks[i]))),
-                      onCall: () => showCallSheet(context, trucks[i]),
-                    ),
-                  );
-                },
-              ),
-            ),
+            Expanded(child: _buildList()),
           ],
         ),
       ),
     );
+  }
+
+  /// Loaded-so-far count, marked "+" while more of the table is still unscanned
+  /// so the number isn't read as a final total.
+  String get _countLabel {
+    if (_initialLoad) return '… trucks';
+    return '${_pager.items.length}${_pager.hasMore ? '+' : ''} trucks';
+  }
+
+  Widget _buildList() {
+    final trucks = _pager.items;
+
+    if (_initialLoad) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.accent));
+    }
+
+    if (trucks.isEmpty) {
+      // Still scanning: no matches yet, but the table isn't exhausted.
+      if (_pager.hasMore && _error == null) {
+        return const Center(
+            child: CircularProgressIndicator(color: AppColors.accent));
+      }
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIcon('truck', size: 40, color: AppColors.line),
+              const SizedBox(height: 12),
+              Text(
+                  _error == null
+                      ? 'No trucks match these filters'
+                      : 'Couldn’t load trucks',
+                  style: AppText.sans(weight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(
+                  _error == null
+                      ? 'Try “Any” for some fields or a different location.'
+                      : 'Check your connection and try again.',
+                  textAlign: TextAlign.center,
+                  style: AppText.sans(size: 12.5, color: AppColors.muted)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // One trailing slot for the "loading more" spinner while rows remain.
+    final showFooter = _pager.hasMore || _error != null;
+    return ListView.separated(
+      controller: _scroll,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      itemCount: trucks.length + (showFooter ? 1 : 0),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, i) {
+        if (i >= trucks.length) return _footer();
+        final t = trucks[i];
+        return TruckRow(
+          truck: t,
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => TruckDetailScreen(truck: t))),
+          onCall: () => showCallSheet(context, t),
+        );
+      },
+    );
+  }
+
+  Widget _footer() {
+    if (_error != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        child: Center(
+          child: TextButton(
+            onPressed: () => setState(() {
+              _error = null;
+              _loadMore();
+            }),
+            child: Text('Couldn’t load more · Retry',
+                style: AppText.sans(size: 13, weight: FontWeight.w700)),
+          ),
+        ),
+      );
+    }
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 18),
+      child: Center(
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: AppColors.accent),
+        ),
+      ),
+    );
+  }
+
+  /// Drops one filter and re-runs the search against the reduced query.
+  void _removeFilter(TruckQuery cleared) {
+    context.read<AppState>().updateQuery(cleared);
+    setState(_runSearch);
   }
 
   void _openFilters() {

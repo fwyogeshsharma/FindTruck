@@ -31,7 +31,8 @@ class TruckFinderApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService(api)),
-        ChangeNotifierProvider(create: (_) => AppState(repo)),
+        ChangeNotifierProvider(
+            create: (_) => AppState(repo)..loadSavedSearches()),
       ],
       child: MaterialApp(
         title: 'truckfinder',

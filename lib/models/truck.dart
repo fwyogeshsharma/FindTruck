@@ -17,6 +17,33 @@ enum Availability {
       };
 }
 
+/// A callable number on a truck record. The API exposes up to three separate
+/// phone fields and they don't all reach the same person — the reporter who
+/// added the truck is not the driver — so each number carries who it reaches.
+class TruckPhone {
+  const TruckPhone(this.number, this.label);
+
+  final String number;
+
+  /// Who this number reaches ('Driver', 'Alternate', 'Reporter · …').
+  final String label;
+
+  /// Comparable form: the last 10 digits, so '+91 99887 76655' and
+  /// '9988776655' are recognised as the same number and only listed once.
+  String get key {
+    final d = number.replaceAll(RegExp(r'\D'), '');
+    return d.length > 10 ? d.substring(d.length - 10) : d;
+  }
+
+  /// Display form: '+91 99887 76655' for 10-digit Indian numbers, else as-is.
+  String get pretty {
+    final d = number.replaceAll(RegExp(r'\D'), '');
+    final local = d.length > 10 ? d.substring(d.length - 10) : d;
+    if (local.length != 10) return number;
+    return '+91 ${local.substring(0, 5)} ${local.substring(5)}';
+  }
+}
+
 /// A truck record sourced from the shared maalgaadi database. Every truck is
 /// `verifiedByMaalgaadi` per the design's trust badge.
 class Truck {
@@ -31,7 +58,7 @@ class Truck {
     required this.updated,
     required this.driverName,
     required this.driverInitials,
-    required this.phone,
+    required this.phones,
     required this.location,
     this.axle = '—',
     this.reportedBy = '',
@@ -52,7 +79,10 @@ class Truck {
   final String driverName; // the vehicle's driver (NOT the reporter)
   final String driverInitials;
   final String reportedBy; // the person who added/reported this truck
-  final String phone;
+
+  /// Every distinct number on the record, best-first. May be empty.
+  final List<TruckPhone> phones;
+
   final LatLng location;
   final DateTime? createdAt; // when the record was added, for "latest" sort
   final int photoCount;
@@ -71,12 +101,19 @@ class Truck {
         driverName: driverName,
         driverInitials: driverInitials,
         reportedBy: reportedBy,
-        phone: phone,
+        phones: phones,
         location: location ?? this.location,
         createdAt: createdAt,
         photoCount: photoCount,
         verifiedByMaalgaadi: verifiedByMaalgaadi,
       );
+
+  /// The number to dial when the finder doesn't pick one — the driver's if the
+  /// record has it, otherwise the best available. Empty when there is none.
+  String get phone => phones.isEmpty ? '' : phones.first.number;
+
+  /// Whether the call sheet should ask which number to dial.
+  bool get hasMultiplePhones => phones.length > 1;
 
   /// True when the API provided real GPS coordinates for this truck.
   bool get hasLiveLocation =>
@@ -94,10 +131,22 @@ class Truck {
     // the person who added the truck is not the driver.
     final driver = str('driver_name') ?? 'Owner-driver';
     final reporter = str('reported_by') ?? str('company_name') ?? '';
-    final phone = str('phone_number') ??
-        str('phone_reported') ??
-        str('reporter_phone') ??
-        '';
+    // All three phone fields are kept, not just the first non-empty one: a
+    // record often carries both the driver's number and the reporter's, and
+    // the finder should get to choose which to ring. Order is best-first and
+    // duplicates (same number in two fields) are collapsed.
+    final phones = <TruckPhone>[];
+    void addPhone(String? raw, String label) {
+      if (raw == null || raw.trim().isEmpty) return;
+      final p = TruckPhone(raw.trim(), label);
+      if (p.key.isEmpty || phones.any((e) => e.key == p.key)) return;
+      phones.add(p);
+    }
+
+    addPhone(str('phone_number'), 'Driver');
+    addPhone(str('phone_reported'), 'Alternate');
+    addPhone(str('reporter_phone'),
+        reporter.isEmpty ? 'Reporter' : 'Reporter · $reporter');
     final lat = (j['latitude'] as num?)?.toDouble() ?? 0;
     final lng = (j['longitude'] as num?)?.toDouble() ?? 0;
     final review = '${j['review_status'] ?? ''}'.toUpperCase();
@@ -116,7 +165,7 @@ class Truck {
       driverName: driver,
       driverInitials: _initials(driver),
       reportedBy: reporter,
-      phone: phone,
+      phones: phones,
       location: LatLng(lat, lng),
       createdAt: DateTime.tryParse(str('created_at') ?? str('detected_at') ?? ''),
       photoCount: (j['frames'] is int && j['frames'] > 0) ? j['frames'] as int : 4,
@@ -213,13 +262,96 @@ class TruckQuery {
         emptyOnly,
         verifiedOnly,
       ].where((v) => v).length;
+
+  /// The non-location filters, as chip-style labels ('10-wheel', 'Open', …).
+  List<String> get filterLabels => [
+        if (wheels != 'Any') '$wheels-wheel',
+        if (body != 'Any') body,
+        if (axle != 'Any') axle,
+        if (emptyOnly) availability == 'All' ? 'Empty now' : availability,
+        if (verifiedOnly) 'Verified',
+      ];
+
+  Map<String, dynamic> toJson() => {
+        'location': location,
+        'wheels': wheels,
+        'body': body,
+        'axle': axle,
+        'emptyOnly': emptyOnly,
+        'verifiedOnly': verifiedOnly,
+        'maxDistanceKm': maxDistanceKm,
+        'availability': availability,
+      };
+
+  factory TruckQuery.fromJson(Map<String, dynamic> j) => TruckQuery(
+        location: j['location'] as String? ?? '',
+        wheels: j['wheels'] as String? ?? 'Any',
+        body: j['body'] as String? ?? 'Any',
+        axle: j['axle'] as String? ?? 'Any',
+        emptyOnly: j['emptyOnly'] as bool? ?? false,
+        verifiedOnly: j['verifiedOnly'] as bool? ?? false,
+        maxDistanceKm: (j['maxDistanceKm'] as num?)?.toDouble() ?? 25,
+        availability: j['availability'] as String? ?? 'All',
+      );
+
+  // Value equality so the same search can't be saved twice.
+  @override
+  bool operator ==(Object other) =>
+      other is TruckQuery &&
+      other.location.trim().toLowerCase() == location.trim().toLowerCase() &&
+      other.wheels == wheels &&
+      other.body == body &&
+      other.axle == axle &&
+      other.emptyOnly == emptyOnly &&
+      other.verifiedOnly == verifiedOnly &&
+      other.maxDistanceKm == maxDistanceKm &&
+      other.availability == availability;
+
+  @override
+  int get hashCode => Object.hash(location.trim().toLowerCase(), wheels, body,
+      axle, emptyOnly, verifiedOnly, maxDistanceKm, availability);
 }
 
-/// A saved recurring search / alert.
+/// A search the finder kept so they can re-run it later.
+///
+/// The [query] is the record — the labels shown on the card are derived from
+/// it rather than stored, so a card can never describe something different
+/// from what running it actually searches for.
 class SavedSearch {
-  const SavedSearch(this.title, this.route, this.alertOn, this.newCount);
-  final String title;
-  final String route;
+  const SavedSearch({
+    required this.id,
+    required this.query,
+    this.alertOn = true,
+  });
+
+  final String id;
+  final TruckQuery query;
+
+  /// Whether the finder asked to be alerted about new matches.
   final bool alertOn;
-  final String newCount;
+
+  /// The filter line: '10-wheel · Open' or 'Any truck' when unfiltered.
+  String get title {
+    final parts = query.filterLabels;
+    return parts.isEmpty ? 'Any truck' : parts.join(' · ');
+  }
+
+  /// The location line.
+  String get route {
+    final loc = query.location.trim();
+    return loc.isEmpty ? 'All locations' : loc;
+  }
+
+  SavedSearch copyWith({bool? alertOn}) =>
+      SavedSearch(id: id, query: query, alertOn: alertOn ?? this.alertOn);
+
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'alertOn': alertOn, 'query': query.toJson()};
+
+  factory SavedSearch.fromJson(Map<String, dynamic> j) => SavedSearch(
+        id: '${j['id']}',
+        alertOn: j['alertOn'] as bool? ?? true,
+        query: TruckQuery.fromJson(
+            (j['query'] as Map?)?.cast<String, dynamic>() ?? const {}),
+      );
 }
