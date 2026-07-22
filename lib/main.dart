@@ -14,6 +14,11 @@ void main() {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
+    // Match the nav bar to the tab bar sitting directly above it, so the
+    // 3-button nav row reads as part of the app rather than a black band.
+    systemNavigationBarColor: AppColors.card,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarDividerColor: AppColors.line,
   ));
   runApp(const TruckFinderApp());
 }

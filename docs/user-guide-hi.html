@@ -1,0 +1,772 @@
+<title>truckfinder — हिन्दी उपयोग गाइड</title>
+
+<style>
+  :root {
+    --bg: #FAFBFC;
+    --card: #FFFFFF;
+    --ink: #2B313A;
+    --muted: #79818C;
+    --line: #E7E9ED;
+    --accent: #2F63D9;
+    --accent-soft: #EAF0FC;
+    --accent-line: #B9CCF3;
+    --ok: #2F9E6A;
+    --ok-bg: #E5F5EC;
+    --warn: #C9881E;
+    --warn-bg: #F6EDD9;
+    --bad: #D04B3B;
+    --bad-bg: #F8E7E3;
+
+    --deva: "Noto Sans Devanagari", "Nirmala UI", "Kohinoor Devanagari",
+            "Devanagari Sangam MN", "Mangal", system-ui, sans-serif;
+    --latin: "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0F1319;
+      --card: #171C24;
+      --ink: #E7EAEF;
+      --muted: #98A1AE;
+      --line: #262D37;
+      --accent: #7FA6F0;
+      --accent-soft: #1A2536;
+      --accent-line: #2E4468;
+      --ok: #5FC896;
+      --ok-bg: #14261D;
+      --warn: #E0A94A;
+      --warn-bg: #2A2213;
+      --bad: #E9705F;
+      --bad-bg: #2C1815;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0F1319;
+    --card: #171C24;
+    --ink: #E7EAEF;
+    --muted: #98A1AE;
+    --line: #262D37;
+    --accent: #7FA6F0;
+    --accent-soft: #1A2536;
+    --accent-line: #2E4468;
+    --ok: #5FC896;
+    --ok-bg: #14261D;
+    --warn: #E0A94A;
+    --warn-bg: #2A2213;
+    --bad: #E9705F;
+    --bad-bg: #2C1815;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #FAFBFC;
+    --card: #FFFFFF;
+    --ink: #2B313A;
+    --muted: #79818C;
+    --line: #E7E9ED;
+    --accent: #2F63D9;
+    --accent-soft: #EAF0FC;
+    --accent-line: #B9CCF3;
+    --ok: #2F9E6A;
+    --ok-bg: #E5F5EC;
+    --warn: #C9881E;
+    --warn-bg: #F6EDD9;
+    --bad: #D04B3B;
+    --bad-bg: #F8E7E3;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--deva);
+    font-size: 17px;
+    line-height: 1.75;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .wrap {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 20px 96px;
+  }
+
+  /* ---- masthead ---- */
+
+  .mast {
+    padding: 56px 0 32px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 40px;
+  }
+
+  .mast .kicker {
+    font-family: var(--latin);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+
+  h1 {
+    font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.3;
+    font-weight: 800;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+
+  .mast p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 16.5px;
+  }
+
+  /* ---- contents ---- */
+
+  nav.toc {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 48px;
+  }
+
+  nav.toc h2 {
+    font-size: 13px;
+    font-family: var(--latin);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 800;
+    margin: 0 0 12px;
+  }
+
+  nav.toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 7px;
+    counter-reset: toc;
+  }
+
+  nav.toc li { counter-increment: toc; }
+
+  nav.toc a {
+    color: var(--ink);
+    text-decoration: none;
+    display: flex;
+    gap: 12px;
+    border-radius: 6px;
+  }
+
+  nav.toc a::before {
+    content: counter(toc);
+    font-family: var(--latin);
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 14px;
+    min-width: 1.4em;
+  }
+
+  nav.toc a:hover { color: var(--accent); }
+
+  /* ---- sections ---- */
+
+  section { margin-bottom: 52px; scroll-margin-top: 24px; }
+
+  h2.sec {
+    font-size: 25px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  .sec-en {
+    font-family: var(--latin);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+
+  p { margin: 0 0 16px; }
+
+  /* ---- the UI-label chip: this is literally what you tap ---- */
+
+  .ui {
+    font-family: var(--latin);
+    font-size: 0.83em;
+    font-weight: 700;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid var(--accent-line);
+    border-radius: 999px;
+    padding: 2px 10px;
+    white-space: nowrap;
+    display: inline-block;
+    line-height: 1.6;
+  }
+
+  /* ---- availability pills, matching the app exactly ---- */
+
+  .pill {
+    font-size: 0.85em;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 3px 12px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .pill.ok   { background: var(--ok-bg);   color: var(--ok); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.bad  { background: var(--bad-bg);  color: var(--bad); }
+
+  /* ---- steps ---- */
+
+  ol.steps {
+    counter-reset: step;
+    list-style: none;
+    margin: 0 0 20px;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+  }
+
+  ol.steps > li {
+    counter-increment: step;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px 16px 56px;
+    position: relative;
+  }
+
+  ol.steps > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 16px;
+    top: 15px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--latin);
+    font-size: 13px;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  ol.steps > li > :last-child { margin-bottom: 0; }
+
+  /* ---- plain lists ---- */
+
+  ul.plain {
+    margin: 0 0 16px;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+  }
+
+  ul.plain > li {
+    padding-left: 18px;
+    position: relative;
+  }
+
+  ul.plain > li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.72em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-line);
+  }
+
+  /* ---- note / warning ---- */
+
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 12px 12px 0;
+    padding: 14px 18px;
+    margin: 0 0 18px;
+  }
+
+  .note.caution {
+    border-left-color: var(--warn);
+    background: var(--warn-bg);
+  }
+
+  .note > :last-child { margin-bottom: 0; }
+
+  .note .lbl {
+    font-family: var(--latin);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .note.caution .lbl { color: var(--warn); }
+
+  /* ---- FAQ ---- */
+
+  .faq {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 4px 20px;
+    margin-bottom: 18px;
+  }
+
+  .faq details {
+    border-bottom: 1px solid var(--line);
+    padding: 4px 0;
+  }
+  .faq details:last-child { border-bottom: 0; }
+
+  .faq summary {
+    cursor: pointer;
+    font-weight: 700;
+    padding: 14px 0;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    border-radius: 6px;
+  }
+
+  .faq summary::-webkit-details-marker { display: none; }
+
+  .faq summary::after {
+    content: "+";
+    font-family: var(--latin);
+    color: var(--accent);
+    font-weight: 800;
+    flex: none;
+  }
+
+  .faq details[open] summary::after { content: "–"; }
+
+  .faq details > p {
+    padding-bottom: 12px;
+    color: var(--muted);
+  }
+  .faq details > p:last-child { margin-bottom: 0; }
+
+  /* ---- limitations table ---- */
+
+  .tablewrap { overflow-x: auto; margin-bottom: 18px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    font-size: 15.5px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  th {
+    font-family: var(--latin);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  tr:last-child td { border-bottom: 0; }
+
+  /* ---- footer ---- */
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  footer .v {
+    font-family: var(--latin);
+    font-size: 12.5px;
+  }
+
+  a { color: var(--accent); }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="kicker">truckfinder · उपयोग गाइड</p>
+    <h1>खाली ट्रक कैसे खोजें — पूरी हिन्दी गाइड</h1>
+    <p>ऐप की स्क्रीनें अंग्रेज़ी में हैं। यह गाइड हर बटन का मतलब हिन्दी में समझाती है, ताकि आप बिना अटके गाड़ी खोज सकें और ड्राइवर से बात कर सकें।</p>
+  </header>
+
+  <nav class="toc">
+    <h2>इस गाइड में</h2>
+    <ol>
+      <li><a href="#shuru">शुरुआत — खाता बनाना और लॉगिन</a></li>
+      <li><a href="#tabs">ऐप के चार हिस्से</a></li>
+      <li><a href="#khojen">गाड़ी खोजना</a></li>
+      <li><a href="#natije">नतीजे और फ़िल्टर बदलना</a></li>
+      <li><a href="#uplabdhta">खाली, जल्द खाली, लदा हुआ — मतलब</a></li>
+      <li><a href="#call">ड्राइवर को कॉल करना</a></li>
+      <li><a href="#save">गाड़ी और सर्च सेव करना</a></li>
+      <li><a href="#dashboard">डैशबोर्ड और नक्शा</a></li>
+      <li><a href="#settings">सेटिंग्स और लॉग आउट</a></li>
+      <li><a href="#sawal">आम सवाल</a></li>
+      <li><a href="#seemayen">जो अभी काम नहीं करता</a></li>
+    </ol>
+  </nav>
+
+  <section id="shuru">
+    <h2 class="sec">शुरुआत — खाता बनाना और लॉगिन</h2>
+    <p class="sec-en">Create account · Log in</p>
+
+    <p>पहली बार ऐप खोलने पर लॉगिन स्क्रीन आती है। अगर आपका खाता नहीं है तो नीचे <span class="ui">Create an account</span> पर टैप करें।</p>
+
+    <ol class="steps">
+      <li><strong>फ़ोन नंबर डालें</strong> — <span class="ui">Phone</span> खाने में अपना 10 अंकों का नंबर लिखें, जैसे 98765 43210।</li>
+      <li><strong>पासवर्ड बनाएँ</strong> — <span class="ui">Password</span> में कम से कम <strong>4 अक्षर</strong> डालें।</li>
+      <li><strong>नाम और ईमेल (ज़रूरी नहीं)</strong> — <span class="ui">Name</span> और <span class="ui">Email</span> खाली छोड़ सकते हैं। पर नाम डालने से ड्राइवर को पता रहता है कि कौन फ़ोन कर रहा है।</li>
+      <li><strong>खाता बनाएँ</strong> — <span class="ui">Create account</span> दबाएँ। नंबर और पासवर्ड सही भरने तक यह बटन धूसर रहेगा।</li>
+    </ol>
+
+    <p>अगली बार सिर्फ़ <span class="ui">Log in</span> करें। ऐप आपका लॉगिन याद रखता है — बार-बार पासवर्ड डालने की ज़रूरत नहीं।</p>
+
+    <div class="note caution">
+      <span class="lbl">ध्यान दें</span>
+      <p>पासवर्ड भूलने पर उसे ठीक करने का कोई तरीका ऐप में नहीं है। पासवर्ड संभाल कर रखें।</p>
+    </div>
+  </section>
+
+  <section id="tabs">
+    <h2 class="sec">ऐप के चार हिस्से</h2>
+    <p class="sec-en">Dashboard · Find · Saved · Profile</p>
+
+    <p>नीचे की पट्टी में चार टैब हैं। किसी भी समय इनमें आ-जा सकते हैं।</p>
+
+    <ul class="plain">
+      <li><span class="ui">Dashboard</span> — आपके आस-पास की सारी गाड़ियाँ एक साथ, नक्शे के साथ।</li>
+      <li><span class="ui">Find</span> — अपनी ज़रूरत के हिसाब से गाड़ी खोजने की स्क्रीन। <strong>यहीं से शुरू करें।</strong></li>
+      <li><span class="ui">Saved</span> — जो गाड़ियाँ आपने सेव की हैं।</li>
+      <li><span class="ui">Profile</span> — आपका खाता, सेव की गई सर्च, सेटिंग्स।</li>
+    </ul>
+  </section>
+
+  <section id="khojen">
+    <h2 class="sec">गाड़ी खोजना</h2>
+    <p class="sec-en">Find a vehicle · गाड़ी खोजें</p>
+
+    <p>नीचे <span class="ui">Find</span> टैब पर जाएँ। यहाँ चार चीज़ें भरनी हैं — सब भरना ज़रूरी नहीं।</p>
+
+    <ol class="steps">
+      <li>
+        <strong>शहर चुनें</strong> — <span class="ui">Location</span> खाने में शहर का नाम लिखना शुरू करें। ऐप नीचे मिलते-जुलते नाम दिखाएगा, उसमें से चुन लें।
+      </li>
+      <li>
+        <strong>एक्सल</strong> — <span class="ui">Axle type</span> में <span class="ui">Single-Axle</span> या <span class="ui">Multi-Axle</span> चुनें। फ़र्क़ न पड़े तो <span class="ui">Any</span> रहने दें।
+      </li>
+      <li>
+        <strong>पहिये</strong> — <span class="ui">Wheels</span> में 4, 6, 10, 12, 14 या 16 चुनें।
+      </li>
+      <li>
+        <strong>बॉडी टाइप</strong> — <span class="ui">Body type</span> में <span class="ui">Open Body</span>, <span class="ui">Flat Bed</span> या <span class="ui">Container</span>।
+      </li>
+      <li>
+        <strong>सिर्फ़ खाली गाड़ियाँ</strong> — <span class="ui">Only empty trucks</span> का बटन चालू करें, तो लदी हुई गाड़ियाँ नहीं दिखेंगी।
+      </li>
+      <li>
+        <strong>खोजें</strong> — नीचे <span class="ui">Find vehicles</span> दबाएँ।
+      </li>
+    </ol>
+
+    <div class="note">
+      <span class="lbl">सुझाव</span>
+      <p>पहली बार में ज़्यादा फ़िल्टर न लगाएँ। पहले सिर्फ़ शहर डालकर देखें कि कितनी गाड़ियाँ हैं, फिर धीरे-धीरे छाँटें। ज़्यादा फ़िल्टर एक साथ लगाने पर अक्सर एक भी गाड़ी नहीं मिलती।</p>
+    </div>
+  </section>
+
+  <section id="natije">
+    <h2 class="sec">नतीजे और फ़िल्टर बदलना</h2>
+    <p class="sec-en">Results</p>
+
+    <p>ऊपर लिखा रहता है कि कितनी गाड़ियाँ मिलीं, जैसे <strong>23 trucks</strong>।</p>
+
+    <div class="note">
+      <span class="lbl">संख्या के बाद <strong>+</strong> का मतलब</span>
+      <p>अगर लिखा है <strong>23+ trucks</strong>, तो इसका मतलब है ऐप अभी और गाड़ियाँ ढूँढ रहा है। नीचे स्क्रॉल करते जाइए, और गाड़ियाँ अपने आप जुड़ती जाएँगी। <strong>+</strong> हटने पर समझिए पूरी सूची आ गई।</p>
+    </div>
+
+    <p><strong>फ़िल्टर हटाना:</strong> ऊपर नीली गोल पट्टियों में आपके लगाए हुए फ़िल्टर दिखते हैं — जैसे शहर का नाम, <span class="ui">10-wheel</span>, <span class="ui">Open Body</span>। किसी भी पट्टी पर टैप करते ही वह फ़िल्टर हट जाता है और नतीजे तुरंत दोबारा आ जाते हैं।</p>
+
+    <p><strong>और फ़िल्टर लगाना:</strong> सबसे पहली नीली पट्टी <span class="ui">Filters</span> पर टैप करें। यहाँ दो चीज़ें ज़्यादा मिलती हैं जो <span class="ui">Find</span> स्क्रीन पर नहीं थीं:</p>
+
+    <ul class="plain">
+      <li><span class="ui">Availability</span> — <span class="ui">All</span>, <span class="ui">Empty now</span> या <span class="ui">Empty soon</span>।</li>
+      <li><span class="ui">Verified trucks only</span> — सिर्फ़ जाँची-परखी गाड़ियाँ।</li>
+    </ul>
+
+    <div class="note caution">
+      <span class="lbl">ज़रूरी</span>
+      <p>फ़िल्टर स्क्रीन पर बदलाव करने के बाद नीचे <span class="ui">Apply filters</span> ज़रूर दबाएँ। ऊपर के <strong>✕</strong> से बंद करेंगे तो आपके बदलाव नहीं लगेंगे। <span class="ui">Reset</span> सब कुछ हटा देता है, पर वह भी तभी लागू होगा जब आप <span class="ui">Apply filters</span> दबाएँ।</p>
+    </div>
+  </section>
+
+  <section id="uplabdhta">
+    <h2 class="sec">खाली, जल्द खाली, लदा हुआ — मतलब</h2>
+    <p class="sec-en">Availability</p>
+
+    <p>हर गाड़ी पर एक रंगीन पट्टी लगी होती है। रंग से तुरंत पता चल जाता है कि गाड़ी काम की है या नहीं।</p>
+
+    <ul class="plain">
+      <li><span class="pill ok">Empty now · खाली अभी</span> — गाड़ी अभी खाली है। सबसे पहले इन्हीं को फ़ोन करें।</li>
+      <li><span class="pill warn">Empty soon · जल्द खाली</span> — गाड़ी जल्द खाली होने वाली है, या उसकी हालत पक्की नहीं है। फ़ोन करके पूछ लें।</li>
+      <li><span class="pill bad">Loaded · लदा हुआ</span> — गाड़ी अभी लदी है।</li>
+    </ul>
+
+    <div class="note caution">
+      <span class="lbl">ईमानदारी से</span>
+      <p><span class="pill warn">जल्द खाली</span> उन गाड़ियों पर भी लग जाता है जिनकी असली हालत सिस्टम को पता नहीं। इसलिए इसे "पक्का जल्द खाली होगी" न मानें — फ़ोन करके ही पुष्टि करें।</p>
+    </div>
+  </section>
+
+  <section id="call">
+    <h2 class="sec">ड्राइवर को कॉल करना</h2>
+    <p class="sec-en">Call driver</p>
+
+    <p>किसी भी सूची में गाड़ी के आगे बने गोल <strong>फ़ोन के बटन</strong> पर टैप करें। या गाड़ी खोलकर नीचे <span class="ui">Call driver</span> दबाएँ।</p>
+
+    <p>एक छोटी खिड़की खुलेगी जिसमें ड्राइवर का नाम, गाड़ी नंबर और फ़ोन नंबर दिखेगा।</p>
+
+    <ul class="plain">
+      <li><strong>एक ही नंबर हो</strong> — नंबर बड़ा-बड़ा दिखेगा। <span class="ui">Call now</span> दबाते ही फ़ोन लग जाएगा।</li>
+      <li><strong>एक से ज़्यादा नंबर हों</strong> — ऊपर लिखा आएगा <span class="ui">Choose a number to call</span>, और नीचे सारे नंबर अलग-अलग दिखेंगे। जिस पर टैप करेंगे, उसी पर फ़ोन लगेगा।</li>
+    </ul>
+
+    <p>नंबरों के ऊपर छोटा-सा लेबल लिखा होता है, ताकि पता रहे किससे बात होगी:</p>
+
+    <ul class="plain">
+      <li><span class="ui">Driver</span> — गाड़ी चलाने वाला।</li>
+      <li><span class="ui">Alternate</span> — दूसरा नंबर, अक्सर वही ड्राइवर या मालिक।</li>
+      <li><span class="ui">Reporter</span> — जिसने यह गाड़ी सिस्टम में दर्ज की। <strong>यह ड्राइवर नहीं है</strong> — इनसे गाड़ी की जानकारी मिल सकती है, बुकिंग नहीं।</li>
+    </ul>
+
+    <div class="note">
+      <span class="lbl">सुझाव</span>
+      <p>बात शुरू करते ही बता दें कि आपको उनका नंबर <strong>truckfinder</strong> पर मिला। ऐप में भी यही सलाह लिखी आती है — इससे ड्राइवर को भरोसा होता है।</p>
+    </div>
+  </section>
+
+  <section id="save">
+    <h2 class="sec">गाड़ी और सर्च सेव करना</h2>
+    <p class="sec-en">Saved trucks · Saved searches</p>
+
+    <p><strong>गाड़ी सेव करना:</strong> गाड़ी खोलें और ऊपर दाईं ओर या नीचे बने <strong>बुकमार्क</strong> के निशान पर टैप करें। सेव की गई गाड़ियाँ <span class="ui">Saved</span> टैब में मिलेंगी।</p>
+
+    <div class="note caution">
+      <span class="lbl">ध्यान दें</span>
+      <p>गाड़ी को सेव-सूची से हटाने के लिए उसे खोलकर दोबारा बुकमार्क दबाना पड़ता है। सूची में से सीधे हटाने का तरीका अभी नहीं है। साथ ही, ऊपर वाला बुकमार्क बटन दबाने पर उसका रूप नहीं बदलता — पर काम हो जाता है। नीचे वाला बटन सही हालत दिखाता है।</p>
+    </div>
+
+    <p><strong>सर्च सेव करना</strong> — अगर आप बार-बार वही खोज करते हैं (जैसे "आगरा में 10 पहिये वाली खाली गाड़ी"), तो उसे सेव कर लें:</p>
+
+    <ol class="steps">
+      <li>पहले <span class="ui">Find</span> पर जाकर अपनी पसंद के फ़िल्टर लगाकर एक बार खोज लें।</li>
+      <li>अब <span class="ui">Saved</span> टैब खोलें और ऊपर <strong>घंटी</strong> के निशान पर टैप करें। (या <span class="ui">Profile</span> → <span class="ui">Saved searches &amp; alerts</span>।)</li>
+      <li>नीचे <span class="ui">Save current search</span> दबाएँ। "Search saved" का संदेश आ जाएगा।</li>
+      <li>अगली बार उसी सर्च के कार्ड पर टैप कीजिए — वही खोज दोबारा चल जाएगी।</li>
+    </ol>
+
+    <p>सेव की गई सर्च हटाने के लिए कार्ड पर <span class="ui">Delete</span> दबाएँ और पुष्टि करें। यह सूची फ़ोन में सुरक्षित रहती है — ऐप बंद करके दोबारा खोलने पर भी बनी रहती है।</p>
+  </section>
+
+  <section id="dashboard">
+    <h2 class="sec">डैशबोर्ड और नक्शा</h2>
+    <p class="sec-en">Vehicle dashboard · सभी गाड़ियाँ</p>
+
+    <p><span class="ui">Dashboard</span> टैब बिना कोई फ़िल्टर लगाए आस-पास की गाड़ियाँ दिखाता है — जब आपको कुछ खास नहीं, बस "क्या-क्या उपलब्ध है" देखना हो।</p>
+
+    <ul class="plain">
+      <li><strong>ऊपर दाईं ओर शहर की पट्टी</strong> — इस पर टैप करने से लोकेशन और सूची दोनों ताज़ा हो जाती हैं। सूची को नीचे खींचकर भी ताज़ा कर सकते हैं।</li>
+      <li><span class="ui">In my city</span> — चालू करने पर सिर्फ़ आपके <strong>लगभग 50 किलोमीटर</strong> के दायरे की गाड़ियाँ दिखेंगी।</li>
+      <li><span class="ui">Latest</span> / <span class="ui">Nearest</span> — नई दर्ज हुई गाड़ियाँ पहले, या पास वाली पहले।</li>
+      <li><strong>नक्शा</strong> — दो उँगलियों से छोटा-बड़ा करें, खींचकर घुमाएँ। नीला बिंदु आप हैं। किसी पिन पर टैप करने से वह गाड़ी खुल जाती है।</li>
+    </ul>
+
+    <div class="note caution">
+      <span class="lbl">ध्यान दें</span>
+      <p>डैशबोर्ड पर सिर्फ़ <strong>सबसे नई 200 गाड़ियाँ</strong> आती हैं, पूरी सूची नहीं। पूरी सूची में खोजने के लिए <span class="ui">Find</span> टैब का इस्तेमाल करें।</p>
+      <p>नक्शा सिर्फ़ तभी दिखता है जब कम से कम एक गाड़ी का GPS चालू हो।</p>
+    </div>
+  </section>
+
+  <section id="settings">
+    <h2 class="sec">सेटिंग्स और लॉग आउट</h2>
+    <p class="sec-en">Settings</p>
+
+    <p><span class="ui">Profile</span> → <span class="ui">Settings</span> पर जाएँ। यहाँ काम की एक ही चीज़ है — <span class="ui">Log out</span>, जो लाल रंग में सबसे नीचे है।</p>
+
+    <div class="note caution">
+      <span class="lbl">सावधान</span>
+      <p><span class="ui">Log out</span> दबाते ही आप तुरंत बाहर हो जाएँगे — कोई "पक्का?" वाला सवाल नहीं पूछा जाता। दोबारा फ़ोन नंबर और पासवर्ड डालना पड़ेगा।</p>
+    </div>
+
+    <p>इसी स्क्रीन पर <span class="ui">Language</span>, <span class="ui">Alert notifications</span> और <span class="ui">About truckfinder</span> भी दिखते हैं, पर ये अभी काम नहीं करते। नीचे <a href="#seemayen">"जो अभी काम नहीं करता"</a> देखें।</p>
+  </section>
+
+  <section id="sawal">
+    <h2 class="sec">आम सवाल</h2>
+    <p class="sec-en">Frequently asked · सामान्य सवाल</p>
+
+    <div class="faq">
+      <details open>
+        <summary>गाड़ियों की जानकारी कितनी ताज़ा होती है?</summary>
+        <p>हर गाड़ी के नीचे लिखा रहता है कि वह कब दर्ज हुई थी — जैसे <strong>20 min ago</strong> (20 मिनट पहले), <strong>3 hr ago</strong> (3 घंटे पहले), <strong>2 d ago</strong> (2 दिन पहले)। यह समय maalgaadi के डेटा से आता है।</p>
+        <p>जितना पुराना समय, उतनी ज़्यादा संभावना कि गाड़ी अब खाली न हो। कुछ घंटे से पुरानी गाड़ी पर फ़ोन करने से पहले उम्मीद कम रखें।</p>
+      </details>
+
+      <details>
+        <summary>"खाली अभी" कैसे तय होता है?</summary>
+        <p>यह maalgaadi के सिस्टम में दर्ज गाड़ी की हालत से अपने आप आता है। जहाँ हालत <strong>खाली</strong> दर्ज है, वहाँ <span class="pill ok">खाली अभी</span> लगता है; जहाँ <strong>लदी</strong> दर्ज है, वहाँ <span class="pill bad">लदा हुआ</span>।</p>
+        <p>बाकी सब पर <span class="pill warn">जल्द खाली</span> लग जाता है — इसमें वे गाड़ियाँ भी शामिल हैं जिनकी हालत सिस्टम को पता ही नहीं। इसे पक्की जानकारी न मानें।</p>
+      </details>
+
+      <details>
+        <summary>ड्राइवर ने फ़ोन नहीं उठाया — अब क्या करें?</summary>
+        <p>पहले देखें कि उस गाड़ी पर एक से ज़्यादा नंबर तो नहीं हैं। फ़ोन वाली खिड़की में अगर <span class="ui">Choose a number to call</span> लिखा आता है, तो दूसरा नंबर भी आज़माएँ।</p>
+        <p>ड्राइवर अक्सर गाड़ी चलाते समय फ़ोन नहीं उठाते। थोड़ी देर बाद दोबारा कोशिश करें। इस बीच उसी शहर की दूसरी <span class="pill ok">खाली अभी</span> गाड़ियों पर फ़ोन करते रहें।</p>
+      </details>
+
+      <details>
+        <summary>गाड़ी की जानकारी ग़लत है — कैसे बताएँ?</summary>
+        <p>ऐप में अभी ग़लत जानकारी बताने का कोई तरीका नहीं है। गाड़ी की स्क्रीन पर "report if wrong" लिखा तो दिखता है, पर वह सिर्फ़ लिखावट है — उस पर टैप नहीं होता।</p>
+        <p>फ़िलहाल अपनी टीम या maalgaadi के संपर्क सूत्र को सीधे बताएँ।</p>
+      </details>
+    </div>
+  </section>
+
+  <section id="seemayen">
+    <h2 class="sec">जो अभी काम नहीं करता</h2>
+    <p class="sec-en">Known limitations</p>
+
+    <p>ऐप में कुछ चीज़ें दिखती तो हैं, पर अभी चालू नहीं हैं। इन्हें आज़माने में समय बर्बाद न करें।</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>कहाँ</th>
+            <th>क्या</th>
+            <th>असल में</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Settings</td>
+            <td><span class="ui">Language</span></td>
+            <td>सूची खुलती है, पर भाषा नहीं बदलती</td>
+          </tr>
+          <tr>
+            <td>Settings</td>
+            <td><span class="ui">Alert notifications</span></td>
+            <td>बटन चलता है, पर कोई सूचना नहीं आती</td>
+          </tr>
+          <tr>
+            <td>Settings</td>
+            <td><span class="ui">About truckfinder</span></td>
+            <td>टैप करने पर कुछ नहीं होता</td>
+          </tr>
+          <tr>
+            <td>Help &amp; support</td>
+            <td>पूरी स्क्रीन</td>
+            <td>खोज खाना, चारों सवाल और <span class="ui">Contact support</span> — कोई भी काम नहीं करता</td>
+          </tr>
+          <tr>
+            <td>Profile</td>
+            <td><span class="ui">Edit</span></td>
+            <td>बटन नहीं है; नाम-फ़ोन बदलने की सुविधा नहीं</td>
+          </tr>
+          <tr>
+            <td>Results</td>
+            <td><span class="ui">Nearest</span></td>
+            <td>सिर्फ़ लिखावट है; नतीजों की तरतीब नहीं बदलती</td>
+          </tr>
+          <tr>
+            <td>Saved searches</td>
+            <td>घंटी का बटन</td>
+            <td>चालू/बंद याद रहता है, पर सूचना अभी नहीं आती</td>
+          </tr>
+          <tr>
+            <td>Saved trucks</td>
+            <td>"saved 2 days ago"</td>
+            <td>यह असली तारीख़ नहीं है</td>
+          </tr>
+          <tr>
+            <td>हर जगह</td>
+            <td>नीला सत्यापन का निशान</td>
+            <td>हर गाड़ी पर लगता है; इसे भरोसे की पहचान न मानें</td>
+          </tr>
+          <tr>
+            <td>हर जगह</td>
+            <td>गाड़ी की तस्वीरें</td>
+            <td>असली तस्वीरें नहीं हैं, सिर्फ़ खाली डिब्बे हैं</td>
+          </tr>
+          <tr>
+            <td>Login</td>
+            <td>पासवर्ड भूलना</td>
+            <td>ऐसी कोई सुविधा नहीं है</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note caution">
+      <span class="lbl">सबसे ज़रूरी बात</span>
+      <p>गाड़ी पर लगा नीला <strong>सत्यापित</strong> निशान हर गाड़ी पर अपने आप लग जाता है — इसका मतलब यह नहीं कि उस गाड़ी की जाँच हुई है। फ़ोन पर बात करके ही गाड़ी, ड्राइवर और भाड़ा तय करें।</p>
+    </div>
+  </section>
+
+  <footer>
+    <p class="v">truckfinder · v1.0.0 · data by maalgaadi</p>
+    <p>यह गाइड ऐप के मौजूदा रूप के अनुसार बनी है। ऐप बदलने पर गाइड भी बदलनी होगी।</p>
+  </footer>
+
+</div>

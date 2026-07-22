@@ -24,7 +24,9 @@ class FinderLogo extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(size * 0.28),
-              color: onDark ? Colors.white.withValues(alpha: 0.16) : AppColors.accent,
+              color: onDark
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : AppColors.accent,
               border: onDark
                   ? Border.all(color: Colors.white.withValues(alpha: 0.25))
                   : null,
@@ -41,9 +43,15 @@ class FinderLogo extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Colors.white,
                 border: Border.all(
-                    color: onDark ? AppColors.accent : AppColors.bg, width: 2),
+                  color: onDark ? AppColors.accent : AppColors.bg,
+                  width: 2,
+                ),
               ),
-              child: AppIcon('search', size: size * 0.24, color: AppColors.accent),
+              child: AppIcon(
+                'search',
+                size: size * 0.24,
+                color: AppColors.accent,
+              ),
             ),
           ),
         ],
@@ -66,7 +74,10 @@ class AvailChip extends StatelessWidget {
       Availability.loaded => (AppColors.muted, AppColors.bg),
     };
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: sm ? 8 : 9, vertical: sm ? 3 : 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: sm ? 8 : 9,
+        vertical: sm ? 3 : 4,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
@@ -78,13 +89,19 @@ class AvailChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+          ),
           const SizedBox(width: 5),
-          Text(kind.label,
-              style: AppText.sans(
-                  size: sm ? 10.5 : 11.5, weight: FontWeight.w700, color: c)),
+          Text(
+            kind.label,
+            style: AppText.sans(
+              size: sm ? 10.5 : 11.5,
+              weight: FontWeight.w700,
+              color: c,
+            ),
+          ),
         ],
       ),
     );
@@ -102,7 +119,10 @@ class Verified extends StatelessWidget {
     return Container(
       width: d,
       height: d,
-      decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
+      decoration: const BoxDecoration(
+        color: AppColors.accent,
+        shape: BoxShape.circle,
+      ),
       child: Icon(Icons.check, size: sm ? 9 : 11, color: Colors.white),
     );
   }
@@ -123,35 +143,72 @@ class FinderTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Tab labels must not grow with the system font scale: at large scales the
+    // icon + label column overflows the bar's height on short screens.
+    final scale = MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 26),
       decoration: const BoxDecoration(
         color: AppColors.card,
         border: Border(top: BorderSide(color: AppColors.line)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < _tabs.length; i++)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTap == null ? null : () => onTap!(i),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppIcon(_tabs[i].$1,
-                      size: 24,
-                      color: i == active ? AppColors.accent : AppColors.muted),
-                  const SizedBox(height: 3),
-                  Text(_tabs[i].$2,
-                      style: AppText.sans(
-                          size: 10.5,
-                          weight: i == active ? FontWeight.w700 : FontWeight.w600,
-                          color: i == active ? AppColors.accent : AppColors.muted)),
-                ],
-              ),
+      // SafeArea supplies the real bottom inset, which differs per device and
+      // per navigation mode (~48dp for Android 3-button, ~34dp for gesture, 0
+      // where there is no system bar). This used to be a hardcoded 26px, which
+      // left the tabs sitting underneath the 3-button back/home/recents row.
+      // The inset is applied inside the decoration so the bar's background and
+      // top border still paint edge-to-edge behind the system bar.
+      child: SafeArea(
+        top: false,
+        // Floor for devices reporting no inset, so the tabs aren't flush
+        // against the bottom edge.
+        minimum: const EdgeInsets.only(bottom: 10),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: MediaQuery.withNoTextScaling(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                for (var i = 0; i < _tabs.length; i++)
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onTap == null ? null : () => onTap!(i),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppIcon(
+                            _tabs[i].$1,
+                            size: 24,
+                            color: i == active
+                                ? AppColors.accent
+                                : AppColors.muted,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _tabs[i].$2,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            textScaler: scale,
+                            style: AppText.sans(
+                              size: 10.5,
+                              weight: i == active
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: i == active
+                                  ? AppColors.accent
+                                  : AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -195,8 +252,9 @@ class TruckRow extends StatelessWidget {
           color: selected ? AppColors.accentSoft : AppColors.card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: selected ? AppColors.accent : AppColors.line,
-              width: selected ? 1.5 : 1),
+            color: selected ? AppColors.accent : AppColors.line,
+            width: selected ? 1.5 : 1,
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,29 +268,44 @@ class TruckRow extends StatelessWidget {
                   Row(
                     children: [
                       Flexible(
-                        child: Text(truck.plate,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.sans(size: 15, weight: FontWeight.w800)),
+                        child: Text(
+                          truck.plate,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.sans(
+                            size: 15,
+                            weight: FontWeight.w800,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 6),
                       const Verified(sm: true),
                     ],
                   ),
                   const SizedBox(height: 3),
-                  Text('${truck.wheels}-wheel · ${truck.body}',
-                      style: AppText.sans(
-                          size: 12.5, weight: FontWeight.w600, color: AppColors.muted)),
+                  Text(
+                    '${truck.wheels}-wheel · ${truck.body}',
+                    style: AppText.sans(
+                      size: 12.5,
+                      weight: FontWeight.w600,
+                      color: AppColors.muted,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       AppIcon('pin', size: 13, color: AppColors.muted),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: Text(meta,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.sans(size: 11.5, color: AppColors.muted)),
+                        child: Text(
+                          meta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.sans(
+                            size: 11.5,
+                            color: AppColors.muted,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -256,8 +329,11 @@ class TruckRow extends StatelessWidget {
                       color: loaded ? AppColors.bg : AppColors.accent,
                       border: loaded ? Border.all(color: AppColors.line) : null,
                     ),
-                    child: AppIcon('phone',
-                        size: 18, color: loaded ? AppColors.muted : Colors.white),
+                    child: AppIcon(
+                      'phone',
+                      size: 18,
+                      color: loaded ? AppColors.muted : Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -276,11 +352,7 @@ class TruckRow extends StatelessWidget {
     final thumb = Stack(
       clipBehavior: Clip.none,
       children: [
-        ThumbBox(
-          size: 58,
-          label: 'truck',
-          radius: 12,
-        ),
+        ThumbBox(size: 58, label: 'truck', radius: 12),
         if (canLocate)
           Positioned(
             right: -4,
@@ -293,9 +365,11 @@ class TruckRow extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.accent, width: 1.5),
               ),
-              child: AppIcon('pin',
-                  size: 12,
-                  color: selected ? Colors.white : AppColors.accent),
+              child: AppIcon(
+                'pin',
+                size: 12,
+                color: selected ? Colors.white : AppColors.accent,
+              ),
             ),
           ),
       ],
@@ -311,7 +385,12 @@ class TruckRow extends StatelessWidget {
 
 /// From/To route card with swap control (finderScreens.jsx `RouteCard`).
 class RouteCard extends StatelessWidget {
-  const RouteCard({super.key, required this.from, required this.to, this.onSwap});
+  const RouteCard({
+    super.key,
+    required this.from,
+    required this.to,
+    this.onSwap,
+  });
   final String from;
   final String to;
   final VoidCallback? onSwap;
@@ -382,11 +461,12 @@ class RouteCard extends StatelessWidget {
     );
   }
 
-  Widget _leg(
-      {required Widget marker,
-      required String label,
-      required String value,
-      required bool border}) {
+  Widget _leg({
+    required Widget marker,
+    required String label,
+    required String value,
+    required bool border,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13),
       decoration: BoxDecoration(
@@ -402,11 +482,18 @@ class RouteCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: AppText.sans(
-                        size: 11, weight: FontWeight.w600, color: AppColors.muted)),
-                Text(value,
-                    style: AppText.sans(size: 14.5, weight: FontWeight.w700)),
+                Text(
+                  label,
+                  style: AppText.sans(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: AppColors.muted,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: AppText.sans(size: 14.5, weight: FontWeight.w700),
+                ),
               ],
             ),
           ),

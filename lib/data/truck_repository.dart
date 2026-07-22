@@ -31,6 +31,11 @@ abstract class TruckRepository {
 
   /// How many trucks are empty right now near the user (home banner).
   Future<int> emptyNowCount();
+
+  /// The whole table, for the dashboard's country-wide map, counts and list.
+  /// [onBatch] is called with the running total as pages land so the UI can
+  /// paint progressively instead of blocking on the full fetch.
+  Future<List<Truck>> allTrucks({void Function(List<Truck> soFar)? onBatch});
 }
 
 /// Pull-based pager over a filtered truck search.
@@ -228,6 +233,50 @@ class RestTruckRepository implements TruckRepository {
     }
   }
 
+  // Map fetch: the whole table is ~7.7k rows / ~8 MB, so it is paged wide
+  // (200/page is reliable here — it is the *sequential* full-table crawl at
+  // 50/page that takes ~80s) and several pages are read at once.
+  static const _mapPageSize = 200;
+  static const _mapConcurrency = 6;
+  static const _mapMaxRounds = 40; // 40 * 6 * 200 = 48k rows of headroom
+
+  List<Truck>? _allCache;
+
+  @override
+  Future<List<Truck>> allTrucks({
+    void Function(List<Truck> soFar)? onBatch,
+  }) async {
+    if (_allCache != null) {
+      onBatch?.call(_allCache!);
+      return _allCache!;
+    }
+    final all = <Truck>[];
+    var done = false;
+    for (var round = 0; round < _mapMaxRounds && !done; round++) {
+      final offsets = [
+        for (var i = 0; i < _mapConcurrency; i++)
+          (round * _mapConcurrency + i) * _mapPageSize,
+      ];
+      final pages = await Future.wait(offsets.map((o) async {
+        try {
+          return await _fetchPage(o, _mapPageSize);
+        } catch (_) {
+          // ApiClient already retries transient failures; a page that still
+          // fails is dropped rather than aborting the whole map. Returning
+          // null (not []) keeps it from being read as end-of-table.
+          return null;
+        }
+      }));
+      for (final page in pages) {
+        if (page == null) continue;
+        all.addAll(page);
+        if (page.length < _mapPageSize) done = true;
+      }
+      onBatch?.call(List.unmodifiable(all));
+    }
+    return _allCache = all;
+  }
+
   @override
   Future<int> emptyNowCount() async {
     final all = _lastFetch ?? await _fetchAll();
@@ -366,6 +415,14 @@ class MockTruckRepository implements TruckRepository {
 
   @override
   Future<int> emptyNowCount() async => 1240;
+
+  @override
+  Future<List<Truck>> allTrucks({
+    void Function(List<Truck> soFar)? onBatch,
+  }) async {
+    onBatch?.call(_trucks);
+    return _trucks;
+  }
 
   @override
   Stream<LatLng> trackLocation(Truck truck) async* {

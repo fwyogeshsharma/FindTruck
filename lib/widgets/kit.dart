@@ -19,11 +19,14 @@ class Bi extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(en,
-            style: AppText.sans(
-                size: 14,
-                weight: big ? FontWeight.w700 : FontWeight.w600,
-                height: 1.15)),
+        Text(
+          en,
+          style: AppText.sans(
+            size: 14,
+            weight: big ? FontWeight.w700 : FontWeight.w600,
+            height: 1.15,
+          ),
+        ),
         if (hi != null)
           Padding(
             padding: const EdgeInsets.only(top: 1),
@@ -41,7 +44,8 @@ class _StripePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final bgPaint = Paint()..color = dark ? const Color(0xFF1A1A1A) : AppColors.ph;
+    final bgPaint = Paint()
+      ..color = dark ? const Color(0xFF1A1A1A) : AppColors.ph;
     canvas.drawRect(Offset.zero & size, bgPaint);
     final stripe = Paint()
       ..color = dark ? const Color(0xFF222222) : AppColors.ph2
@@ -49,7 +53,11 @@ class _StripePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     const gap = 14.0;
     for (double d = -size.height; d < size.width + size.height; d += gap) {
-      canvas.drawLine(Offset(d, 0), Offset(d + size.height, size.height), stripe);
+      canvas.drawLine(
+        Offset(d, 0),
+        Offset(d + size.height, size.height),
+        stripe,
+      );
     }
   }
 
@@ -59,7 +67,12 @@ class _StripePainter extends CustomPainter {
 
 /// Square thumbnail placeholder (kit.jsx `Thumb`).
 class ThumbBox extends StatelessWidget {
-  const ThumbBox({super.key, this.size = 52, this.label = 'truck', this.radius = 12});
+  const ThumbBox({
+    super.key,
+    this.size = 52,
+    this.label = 'truck',
+    this.radius = 12,
+  });
 
   final double size;
   final String label;
@@ -86,12 +99,17 @@ class ThumbBox extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
-                    color: AppColors.card, borderRadius: BorderRadius.circular(4)),
-                child: Text(label,
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 8.5,
-                        color: AppColors.muted)),
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 8.5,
+                    color: AppColors.muted,
+                  ),
+                ),
               ),
             ),
           ),
@@ -103,13 +121,14 @@ class ThumbBox extends StatelessWidget {
 
 /// Flexible placeholder (kit.jsx `Ph`).
 class Ph extends StatelessWidget {
-  const Ph(
-      {super.key,
-      this.width = double.infinity,
-      this.height = 120,
-      this.radius = 16,
-      this.label = 'image',
-      this.dark = false});
+  const Ph({
+    super.key,
+    this.width = double.infinity,
+    this.height = 120,
+    this.radius = 16,
+    this.label = 'image',
+    this.dark = false,
+  });
 
   final double width;
   final double height;
@@ -125,7 +144,8 @@ class Ph extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-            color: dark ? Colors.white.withValues(alpha: 0.12) : AppColors.line),
+          color: dark ? Colors.white.withValues(alpha: 0.12) : AppColors.line,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -137,15 +157,21 @@ class Ph extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                    color: dark ? Colors.black.withValues(alpha: 0.4) : AppColors.card,
-                    borderRadius: BorderRadius.circular(6)),
-                child: Text(label,
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 10,
-                        color: dark
-                            ? Colors.white.withValues(alpha: 0.5)
-                            : AppColors.muted)),
+                  color: dark
+                      ? Colors.black.withValues(alpha: 0.4)
+                      : AppColors.card,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 10,
+                    color: dark
+                        ? Colors.white.withValues(alpha: 0.5)
+                        : AppColors.muted,
+                  ),
+                ),
               ),
             ),
         ],
@@ -156,8 +182,13 @@ class Ph extends StatelessWidget {
 
 /// Primary CTA button (kit.jsx `PrimaryBtn`).
 class PrimaryBtn extends StatelessWidget {
-  const PrimaryBtn(this.label,
-      {super.key, this.icon, this.disabled = false, this.onTap});
+  const PrimaryBtn(
+    this.label, {
+    super.key,
+    this.icon,
+    this.disabled = false,
+    this.onTap,
+  });
 
   final String label;
   final String? icon;
@@ -176,8 +207,9 @@ class PrimaryBtn extends StatelessWidget {
           backgroundColor: disabled ? AppColors.line : AppColors.accent,
           disabledBackgroundColor: AppColors.line,
           elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -186,8 +218,10 @@ class PrimaryBtn extends StatelessWidget {
               AppIcon(icon!, size: 20, color: fg),
               const SizedBox(width: 8),
             ],
-            Text(label,
-                style: AppText.sans(size: 16, weight: FontWeight.w800, color: fg)),
+            Text(
+              label,
+              style: AppText.sans(size: 16, weight: FontWeight.w800, color: fg),
+            ),
           ],
         ),
       ),
@@ -207,9 +241,14 @@ class GhostBtn extends StatelessWidget {
       height: 46,
       child: TextButton(
         onPressed: onTap,
-        child: Text(label,
-            style:
-                AppText.sans(size: 15, weight: FontWeight.w700, color: AppColors.muted)),
+        child: Text(
+          label,
+          style: AppText.sans(
+            size: 15,
+            weight: FontWeight.w700,
+            color: AppColors.muted,
+          ),
+        ),
       ),
     );
   }
@@ -217,8 +256,13 @@ class GhostBtn extends StatelessWidget {
 
 /// Round icon button (kit.jsx `IconBtn`).
 class IconBtn extends StatelessWidget {
-  const IconBtn(this.icon,
-      {super.key, this.onDark = false, this.size = 40, this.onTap});
+  const IconBtn(
+    this.icon, {
+    super.key,
+    this.onDark = false,
+    this.size = 40,
+    this.onTap,
+  });
 
   final String icon;
   final bool onDark;
@@ -236,10 +280,17 @@ class IconBtn extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-              color: onDark ? Colors.white.withValues(alpha: 0.25) : AppColors.line),
+            color: onDark
+                ? Colors.white.withValues(alpha: 0.25)
+                : AppColors.line,
+          ),
           color: onDark ? Colors.white.withValues(alpha: 0.12) : AppColors.card,
         ),
-        child: AppIcon(icon, size: 20, color: onDark ? Colors.white : AppColors.ink),
+        child: AppIcon(
+          icon,
+          size: 20,
+          color: onDark ? Colors.white : AppColors.ink,
+        ),
       ),
     );
   }
@@ -299,8 +350,9 @@ class Field extends StatefulWidget {
 }
 
 class _FieldState extends State<Field> {
-  late final TextEditingController _ctrl =
-      TextEditingController(text: widget.value);
+  late final TextEditingController _ctrl = TextEditingController(
+    text: widget.value,
+  );
   final FocusNode _focus = FocusNode();
 
   @override
@@ -333,16 +385,26 @@ class _FieldState extends State<Field> {
               color: AppColors.card,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: active ? AppColors.accent : AppColors.line, width: 1.5),
+                color: active ? AppColors.accent : AppColors.line,
+                width: 1.5,
+              ),
               boxShadow: active
-                  ? [const BoxShadow(color: AppColors.accentSoft, blurRadius: 0, spreadRadius: 3)]
+                  ? [
+                      const BoxShadow(
+                        color: AppColors.accentSoft,
+                        blurRadius: 0,
+                        spreadRadius: 3,
+                      ),
+                    ]
                   : null,
             ),
             child: Row(
               children: [
                 if (widget.prefix != null) ...[
-                  Text(widget.prefix!,
-                      style: AppText.sans(weight: FontWeight.w700)),
+                  Text(
+                    widget.prefix!,
+                    style: AppText.sans(weight: FontWeight.w700),
+                  ),
                   const SizedBox(width: 8),
                 ],
                 Expanded(
@@ -352,15 +414,19 @@ class _FieldState extends State<Field> {
                           focusNode: _focus,
                           keyboardType: widget.keyboardType,
                           onChanged: widget.onChanged,
-                          style: AppText.sans(size: 15.5, weight: FontWeight.w600),
+                          style: AppText.sans(
+                            size: 15.5,
+                            weight: FontWeight.w600,
+                          ),
                           decoration: InputDecoration(
                             isCollapsed: true,
                             border: InputBorder.none,
                             hintText: widget.placeholder,
                             hintStyle: AppText.sans(
-                                size: 15.5,
-                                weight: FontWeight.w500,
-                                color: AppColors.muted),
+                              size: 15.5,
+                              weight: FontWeight.w500,
+                              color: AppColors.muted,
+                            ),
                           ),
                         )
                       : Text(
@@ -368,13 +434,14 @@ class _FieldState extends State<Field> {
                               ? widget.value!
                               : (widget.placeholder ?? ''),
                           style: AppText.sans(
-                              size: 15.5,
-                              weight: (widget.value?.isNotEmpty ?? false)
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
-                              color: (widget.value?.isNotEmpty ?? false)
-                                  ? AppColors.ink
-                                  : AppColors.muted),
+                            size: 15.5,
+                            weight: (widget.value?.isNotEmpty ?? false)
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: (widget.value?.isNotEmpty ?? false)
+                                ? AppColors.ink
+                                : AppColors.muted,
+                          ),
                         ),
                 ),
               ],
@@ -383,8 +450,10 @@ class _FieldState extends State<Field> {
           if (widget.hint != null)
             Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: Text(widget.hint!,
-                  style: AppText.sans(size: 11.5, color: AppColors.muted)),
+              child: Text(
+                widget.hint!,
+                style: AppText.sans(size: 11.5, color: AppColors.muted),
+              ),
             ),
         ],
       ),
@@ -415,21 +484,28 @@ class SegToggle extends StatelessWidget {
             child: GestureDetector(
               onTap: onChanged == null ? null : () => onChanged!(o),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 10,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: o == value ? AppColors.accent : AppColors.line,
-                      width: 1.5),
+                    color: o == value ? AppColors.accent : AppColors.line,
+                    width: 1.5,
+                  ),
                   color: o == value ? AppColors.accentSoft : AppColors.card,
                 ),
                 child: Center(
-                  child: Text(o,
-                      textAlign: TextAlign.center,
-                      style: AppText.sans(
-                          size: 15,
-                          weight: FontWeight.w800,
-                          color: o == value ? AppColors.accent : AppColors.ink)),
+                  child: Text(
+                    o,
+                    textAlign: TextAlign.center,
+                    style: AppText.sans(
+                      size: 15,
+                      weight: FontWeight.w800,
+                      color: o == value ? AppColors.accent : AppColors.ink,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -467,15 +543,19 @@ class ChipRow extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: o == value ? AppColors.accent : AppColors.line,
-                    width: 1.5),
+                  color: o == value ? AppColors.accent : AppColors.line,
+                  width: 1.5,
+                ),
                 color: o == value ? AppColors.accent : AppColors.card,
               ),
-              child: Text(o,
-                  style: AppText.sans(
-                      size: 15,
-                      weight: FontWeight.w700,
-                      color: o == value ? Colors.white : AppColors.ink)),
+              child: Text(
+                o,
+                style: AppText.sans(
+                  size: 15,
+                  weight: FontWeight.w700,
+                  color: o == value ? Colors.white : AppColors.ink,
+                ),
+              ),
             ),
           ),
       ],
@@ -515,7 +595,9 @@ class AppToggle extends StatelessWidget {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2), blurRadius: 3),
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 3,
+                    ),
                   ],
                 ),
               ),
@@ -560,8 +642,10 @@ class FlowHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (title != null)
-                  Text(title!,
-                      style: AppText.sans(size: 18, weight: FontWeight.w800)),
+                  Text(
+                    title!,
+                    style: AppText.sans(size: 18, weight: FontWeight.w800),
+                  ),
                 if (hi != null) Text(hi!, style: AppText.deva(size: 12.5)),
               ],
             ),
@@ -570,10 +654,17 @@ class FlowHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                  color: AppColors.bg, borderRadius: BorderRadius.circular(999)),
-              child: Text(step!,
-                  style: AppText.sans(
-                      size: 12, weight: FontWeight.w700, color: AppColors.muted)),
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                step!,
+                style: AppText.sans(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: AppColors.muted,
+                ),
+              ),
             ),
         ],
       ),
@@ -589,19 +680,27 @@ class BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 26),
       decoration: const BoxDecoration(
         color: AppColors.card,
         border: Border(top: BorderSide(color: AppColors.line)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final c in children) ...[
-            if (c != children.first) const SizedBox(height: 9),
-            c,
-          ],
-        ],
+      // Real system inset instead of a hardcoded 26px, which was too small for
+      // Android's 3-button nav bar (~48dp) and left the actions underneath it.
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final c in children) ...[
+                if (c != children.first) const SizedBox(height: 9),
+                c,
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

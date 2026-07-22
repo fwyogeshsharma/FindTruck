@@ -235,7 +235,11 @@ class _FinderResultsScreenState extends State<FinderResultsScreen> {
     final showFooter = _pager.hasMore || _error != null;
     return ListView.separated(
       controller: _scroll,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      // The screen's SafeArea passes `bottom: false` so the list can paint
+      // edge-to-edge; pad by the system inset here so the last row still
+      // scrolls clear of the nav bar instead of sitting under it.
+      padding: EdgeInsets.fromLTRB(
+          16, 0, 16, 16 + MediaQuery.paddingOf(context).bottom),
       itemCount: trucks.length + (showFooter ? 1 : 0),
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (_, i) {

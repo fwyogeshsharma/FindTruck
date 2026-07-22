@@ -63,6 +63,24 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+
+# App launcher icon — the splash-screen mark (FinderLogo) rasterised from the
+# Material `local_shipping` + `search` glyphs on the accent blue. Regenerate
+# with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  # Adaptive icon: solid accent plate with the mark inset into the safe zone,
+  # so Android's circular/squircle masks never clip the badge.
+  adaptive_icon_background: "#2F63D9"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  web:
+    generate: true
+    background_color: "#FAFBFC"
+    theme_color: "#2F63D9"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

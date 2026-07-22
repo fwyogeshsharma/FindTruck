@@ -39,20 +39,29 @@ class _CallSheet extends StatelessWidget {
   List<Widget> _numberSection(BuildContext context) {
     if (truck.phones.isEmpty) {
       return [
-        Text('No number on this record',
-            style: AppText.sans(size: 15, weight: FontWeight.w700)),
+        Text(
+          'No number on this record',
+          style: AppText.sans(size: 15, weight: FontWeight.w700),
+        ),
       ];
     }
     if (!truck.hasMultiplePhones) {
       return [
-        Text(truck.phones.first.pretty,
-            style: AppText.sans(
-                size: 26, weight: FontWeight.w800, letterSpacing: 0.5)),
+        Text(
+          truck.phones.first.pretty,
+          style: AppText.sans(
+            size: 26,
+            weight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
       ];
     }
     return [
-      Text('Choose a number to call',
-          style: AppText.sans(size: 13, color: AppColors.muted)),
+      Text(
+        'Choose a number to call',
+        style: AppText.sans(size: 13, color: AppColors.muted),
+      ),
       const SizedBox(height: 10),
       for (final p in truck.phones) ...[
         _NumberRow(phone: p, onTap: () => _call(context, p.number)),
@@ -68,72 +77,104 @@ class _CallSheet extends StatelessWidget {
         color: AppColors.card,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(22, 12, 22, 30),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 5,
-            margin: const EdgeInsets.only(bottom: 18),
-            decoration: BoxDecoration(
-                color: AppColors.line, borderRadius: BorderRadius.circular(999)),
-          ),
-          Row(
+      // The other bottom sheet in the app (settings) wraps its content in a
+      // SafeArea; this one hardcoded 30px, so its actions sat under the system
+      // nav bar on 3-button devices.
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 50,
-                height: 50,
-                decoration: const BoxDecoration(
-                    color: AppColors.accentSoft, shape: BoxShape.circle),
-                alignment: Alignment.center,
-                child: Text(truck.driverInitials,
-                    style: AppText.sans(
-                        size: 16, weight: FontWeight.w800, color: AppColors.accent)),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(truck.driverName,
-                        style: AppText.sans(size: 17, weight: FontWeight.w800)),
-                    const SizedBox(height: 1),
-                    Row(
-                      children: [
-                        Text(truck.plate,
-                            style: AppText.sans(
-                                size: 12.5, color: AppColors.muted)),
-                        const SizedBox(width: 5),
-                        const Verified(sm: true),
-                      ],
-                    ),
-                  ],
+                width: 40,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.line,
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              AvailChip(truck.availability, sm: true),
+              Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accentSoft,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      truck.driverInitials,
+                      style: AppText.sans(
+                        size: 16,
+                        weight: FontWeight.w800,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          truck.driverName,
+                          style: AppText.sans(
+                            size: 17,
+                            weight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Row(
+                          children: [
+                            Text(
+                              truck.plate,
+                              style: AppText.sans(
+                                size: 12.5,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Verified(sm: true),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  AvailChip(truck.availability, sm: true),
+                ],
+              ),
+              const SizedBox(height: 18),
+              ..._numberSection(context),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AppIcon('info', size: 14, color: AppColors.muted),
+                  const SizedBox(width: 7),
+                  Text(
+                    'Mention you found them on truckfinder',
+                    style: AppText.sans(size: 12.5, color: AppColors.muted),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              if (!truck.hasMultiplePhones && truck.phone.isNotEmpty) ...[
+                PrimaryBtn(
+                  'Call now',
+                  icon: 'phone',
+                  onTap: () => _call(context, truck.phone),
+                ),
+                const SizedBox(height: 9),
+              ],
+              GhostBtn('Cancel', onTap: () => Navigator.pop(context)),
             ],
           ),
-          const SizedBox(height: 18),
-          ..._numberSection(context),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AppIcon('info', size: 14, color: AppColors.muted),
-              const SizedBox(width: 7),
-              Text('Mention you found them on truckfinder',
-                  style: AppText.sans(size: 12.5, color: AppColors.muted)),
-            ],
-          ),
-          const SizedBox(height: 18),
-          if (!truck.hasMultiplePhones && truck.phone.isNotEmpty) ...[
-            PrimaryBtn('Call now',
-                icon: 'phone', onTap: () => _call(context, truck.phone)),
-            const SizedBox(height: 9),
-          ],
-          GhostBtn('Cancel', onTap: () => Navigator.pop(context)),
-        ],
+        ),
       ),
     );
   }
@@ -166,17 +207,23 @@ class _NumberRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(phone.label,
-                        style: AppText.sans(
-                            size: 11.5,
-                            weight: FontWeight.w700,
-                            color: AppColors.muted)),
+                    Text(
+                      phone.label,
+                      style: AppText.sans(
+                        size: 11.5,
+                        weight: FontWeight.w700,
+                        color: AppColors.muted,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(phone.pretty,
-                        style: AppText.sans(
-                            size: 18,
-                            weight: FontWeight.w800,
-                            letterSpacing: 0.3)),
+                    Text(
+                      phone.pretty,
+                      style: AppText.sans(
+                        size: 18,
+                        weight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -184,7 +231,9 @@ class _NumberRow extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: const BoxDecoration(
-                    color: AppColors.accent, shape: BoxShape.circle),
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                ),
                 alignment: Alignment.center,
                 child: AppIcon('phone', size: 17, color: Colors.white),
               ),
