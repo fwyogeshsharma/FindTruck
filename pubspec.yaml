@@ -52,6 +52,7 @@ dependencies:
   # Device GPS + reverse geocoding for the location-aware dashboard.
   geolocator: ^13.0.2
   geocoding: ^3.0.0
+  flutter_contacts: ^2.3.0
 
 dev_dependencies:
   flutter_test:

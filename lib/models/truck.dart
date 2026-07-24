@@ -112,6 +112,26 @@ class Truck {
   /// record has it, otherwise the best available. Empty when there is none.
   String get phone => phones.isEmpty ? '' : phones.first.number;
 
+  /// The name used when saving this driver to the phone's contacts, e.g.
+  /// 'Tr-AmanYadav-Jaipur' — a 'Tr-' prefix (marks it as a truck contact),
+  /// the driver's name in PascalCase, and the truck's location. The prefix and
+  /// location keep the finder's contacts searchable by 'Tr' and by area.
+  String get contactName {
+    String pascal(String s) {
+      final words = s.trim().split(RegExp(r'[^A-Za-z0-9]+'))
+        ..removeWhere((w) => w.isEmpty);
+      return words
+          .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
+          .join();
+    }
+
+    final namePart = pascal(driverName);
+    final loc = pascal(area);
+    final buf = StringBuffer('Tr-')..write(namePart.isEmpty ? 'Driver' : namePart);
+    if (loc.isNotEmpty) buf.write('-$loc');
+    return buf.toString();
+  }
+
   /// Whether the call sheet should ask which number to dial.
   bool get hasMultiplePhones => phones.length > 1;
 

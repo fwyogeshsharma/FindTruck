@@ -39,7 +39,8 @@ class TruckFinderApp extends StatelessWidget {
         ChangeNotifierProvider(
             create: (_) => AppState(repo)
               ..loadSavedSearches()
-              ..loadMessageTemplates()),
+              ..loadMessageTemplates()
+              ..loadSavedContacts()),
       ],
       child: MaterialApp(
         title: 'truckfinder',

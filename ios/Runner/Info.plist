@@ -9,6 +9,8 @@
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>truckfinder uses your location to show vehicles in your city.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>truckfinder saves the driver you call to your contacts as Tr-Name-Location so you can find them later.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

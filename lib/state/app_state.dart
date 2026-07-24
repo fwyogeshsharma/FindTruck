@@ -22,6 +22,7 @@ class AppState extends ChangeNotifier {
 
   static const _kSavedSearches = 'saved_searches';
   static const _kMessageTemplates = 'message_templates';
+  static const _kSavedContacts = 'saved_contact_keys';
 
   final List<SavedSearch> savedSearches = [];
 
@@ -157,6 +158,32 @@ class AppState extends ChangeNotifier {
     savedSearches[i] = savedSearches[i].copyWith(alertOn: on);
     notifyListeners();
     await _persistSavedSearches();
+  }
+
+  // ── Saved driver contacts ──────────────────────────────────────────────
+  // Phone-number keys we've already written to the phone's address book, so
+  // calling the same driver again doesn't create a duplicate contact.
+
+  final Set<String> _savedContactKeys = {};
+
+  /// Loads the set of numbers already saved to contacts. Call once at startup.
+  Future<void> loadSavedContacts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_kSavedContacts);
+    if (list == null) return;
+    _savedContactKeys
+      ..clear()
+      ..addAll(list);
+  }
+
+  /// Whether a driver with this number key was already saved to contacts.
+  bool isContactSaved(String key) => _savedContactKeys.contains(key);
+
+  /// Records that a number key has been saved, so it isn't saved twice.
+  Future<void> markContactSaved(String key) async {
+    if (!_savedContactKeys.add(key)) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_kSavedContacts, _savedContactKeys.toList());
   }
 
   bool isSaved(String id) => _savedTruckIds.contains(id);

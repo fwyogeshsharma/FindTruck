@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../data/contact_saver.dart';
 import '../../models/truck.dart';
+import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/finder_widgets.dart';
 import '../../widgets/kit.dart';
@@ -34,7 +37,11 @@ class _CallSheet extends StatelessWidget {
 
   Future<void> _call(BuildContext context, String number) async {
     final uri = Uri(scheme: 'tel', path: number);
+    // Read the state before popping, then save the driver to contacts as
+    // 'Tr-Name-Location' (once per number) before opening the dialer.
+    final state = context.read<AppState>();
     Navigator.pop(context);
+    await saveDriverContact(truck: truck, number: number, state: state);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else if (context.mounted) {
