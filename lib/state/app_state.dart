@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/truck_repository.dart';
+import '../models/message_template.dart';
 import '../models/truck.dart';
 
 /// App-wide state: the active search, saved trucks & searches, and the
@@ -20,8 +21,12 @@ class AppState extends ChangeNotifier {
   Set<String> get savedTruckIds => _savedTruckIds;
 
   static const _kSavedSearches = 'saved_searches';
+  static const _kMessageTemplates = 'message_templates';
 
   final List<SavedSearch> savedSearches = [];
+
+  /// SMS templates the finder reuses when texting drivers.
+  final List<MessageTemplate> messageTemplates = [];
 
   void updateQuery(TruckQuery q) {
     query = q;
@@ -51,6 +56,75 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         _kSavedSearches, jsonEncode(savedSearches.map((s) => s.toJson()).toList()));
+  }
+
+  // ── Message templates ──────────────────────────────────────────────────
+
+  /// Restores SMS templates from disk, seeding the defaults on first run so
+  /// the picker is never empty. Call once at startup.
+  Future<void> loadMessageTemplates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kMessageTemplates);
+    if (raw == null) {
+      messageTemplates
+        ..clear()
+        ..addAll(MessageTemplate.defaults());
+      notifyListeners();
+      await _persistMessageTemplates();
+      return;
+    }
+    try {
+      final list = (jsonDecode(raw) as List)
+          .whereType<Map>()
+          .map((e) => MessageTemplate.fromJson(e.cast<String, dynamic>()));
+      messageTemplates
+        ..clear()
+        ..addAll(list);
+      notifyListeners();
+    } catch (_) {
+      // Corrupt entry — fall back to the seeded defaults rather than an empty
+      // list, so the finder can still message drivers.
+      messageTemplates
+        ..clear()
+        ..addAll(MessageTemplate.defaults());
+      notifyListeners();
+      await _persistMessageTemplates();
+    }
+  }
+
+  Future<void> _persistMessageTemplates() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kMessageTemplates,
+        jsonEncode(messageTemplates.map((t) => t.toJson()).toList()));
+  }
+
+  /// Adds a new template (newest first) and returns it.
+  Future<MessageTemplate> addTemplate(String title, String body) async {
+    final t = MessageTemplate(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: title.trim(),
+      body: body.trim(),
+    );
+    messageTemplates.insert(0, t);
+    notifyListeners();
+    await _persistMessageTemplates();
+    return t;
+  }
+
+  /// Updates the title/body of an existing template.
+  Future<void> updateTemplate(String id, String title, String body) async {
+    final i = messageTemplates.indexWhere((t) => t.id == id);
+    if (i < 0) return;
+    messageTemplates[i] =
+        messageTemplates[i].copyWith(title: title.trim(), body: body.trim());
+    notifyListeners();
+    await _persistMessageTemplates();
+  }
+
+  Future<void> removeTemplate(String id) async {
+    messageTemplates.removeWhere((t) => t.id == id);
+    notifyListeners();
+    await _persistMessageTemplates();
   }
 
   /// Whether [q] is already saved — drives the "Saved" state on the button.

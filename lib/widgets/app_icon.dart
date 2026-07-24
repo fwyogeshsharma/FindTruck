@@ -35,6 +35,8 @@ class AppIcon extends StatelessWidget {
     'shield': Icons.shield_outlined,
     'logout': Icons.logout,
     'phone': Icons.call_outlined,
+    'message': Icons.sms_outlined,
+    'send': Icons.send_outlined,
     'search': Icons.search,
     'bolt': Icons.bolt,
     'bank': Icons.account_balance,

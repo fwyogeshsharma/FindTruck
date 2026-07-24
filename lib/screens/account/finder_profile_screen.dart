@@ -10,6 +10,7 @@ import '../saved/saved_searches_screen.dart';
 import '../saved/saved_trucks_full_screen.dart';
 import 'finder_help_screen.dart';
 import 'finder_settings_screen.dart';
+import 'message_templates_screen.dart';
 
 /// 12 · Profile — the "Profile" tab body (finderDetail.jsx `FinderProfile`).
 /// Shows the logged-in FreightDesk account and its report stats.
@@ -143,6 +144,12 @@ class _FinderProfileTabState extends State<FinderProfileTab> {
                         hi: 'सेव किए ट्रक',
                         onTap: () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => const SavedTrucksFullScreen()))),
+                    FRow(
+                        icon: 'message',
+                        title: 'Message templates',
+                        hi: 'मैसेज टेम्पलेट',
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => const MessageTemplatesScreen()))),
                     FRow(
                         icon: 'bell',
                         title: 'Settings',

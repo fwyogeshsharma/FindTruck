@@ -5,6 +5,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>tel</string>
+		<string>sms</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>truckfinder uses your location to show vehicles in your city.</string>

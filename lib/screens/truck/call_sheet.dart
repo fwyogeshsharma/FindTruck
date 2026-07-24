@@ -5,6 +5,7 @@ import '../../models/truck.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/finder_widgets.dart';
 import '../../widgets/kit.dart';
+import 'message_sheet.dart';
 
 /// 09 · Call driver — tap-to-call confirm sheet (finderDetail.jsx `CallSheet`).
 Future<void> showCallSheet(BuildContext context, Truck t) {
@@ -13,13 +14,23 @@ Future<void> showCallSheet(BuildContext context, Truck t) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: const Color(0x8C0F1923),
-    builder: (ctx) => _CallSheet(truck: t),
+    builder: (ctx) => _CallSheet(truck: t, origin: context),
   );
 }
 
 class _CallSheet extends StatelessWidget {
-  const _CallSheet({required this.truck});
+  const _CallSheet({required this.truck, required this.origin});
   final Truck truck;
+
+  /// The screen context that opened this sheet — stays mounted after the sheet
+  /// pops, so it can host the message sheet handed off from here.
+  final BuildContext origin;
+
+  /// Close this sheet and open the template picker on the originating screen.
+  void _message(BuildContext context) {
+    Navigator.pop(context);
+    showMessageSheet(origin, truck);
+  }
 
   Future<void> _call(BuildContext context, String number) async {
     final uri = Uri(scheme: 'tel', path: number);
@@ -164,10 +175,41 @@ class _CallSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               if (!truck.hasMultiplePhones && truck.phone.isNotEmpty) ...[
-                PrimaryBtn(
-                  'Call now',
-                  icon: 'phone',
-                  onTap: () => _call(context, truck.phone),
+                Row(
+                  children: [
+                    Expanded(
+                      child: PrimaryBtn(
+                        'Call now',
+                        icon: 'phone',
+                        onTap: () => _call(context, truck.phone),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _MessageBtn(onTap: () => _message(context)),
+                  ],
+                ),
+                const SizedBox(height: 9),
+              ] else if (truck.hasMultiplePhones) ...[
+                // Numbers above are tap-to-call; offer messaging as its own
+                // action (the message sheet lets the finder pick which number).
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _message(context),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.accentLine),
+                      backgroundColor: AppColors.accentSoft,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    icon: AppIcon('message', size: 19, color: AppColors.accent),
+                    label: Text('Message driver',
+                        style: AppText.sans(
+                            size: 15,
+                            weight: FontWeight.w800,
+                            color: AppColors.accent)),
+                  ),
                 ),
                 const SizedBox(height: 9),
               ],
@@ -175,6 +217,31 @@ class _CallSheet extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Square secondary action beside "Call now" — opens the message templates.
+class _MessageBtn extends StatelessWidget {
+  const _MessageBtn({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 52,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.zero,
+          side: const BorderSide(color: AppColors.accentLine),
+          backgroundColor: AppColors.accentSoft,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: AppIcon('message', size: 22, color: AppColors.accent),
       ),
     );
   }
